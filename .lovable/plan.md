@@ -1,120 +1,74 @@
-# Plan: 5 tipos de centro con flujos diferenciados
+# Landing explicativa en `/` con secciones por actor
 
-Nota sobre el mock: como pasamos de 3 a 5 tipos, en lugar de 9 centros voy con **10 centros (2 por tipo)** para mantener el directorio balanceado sin inflarlo. Si prefieres 15 (3 por tipo) lo ajusto.
+El directorio actual (que hoy vive en `/`) pasa a `/centros`. La nueva landing toma `/` y explica cómo funciona la plataforma a los 4 actores. Sin datos reales, todo mock como el resto del MVP.
 
-## 1. Modelo de datos (`src/data/mock.ts`)
+## 1. Ruta y navegación
 
-Nuevo discriminante `CenterKind`:
+- `src/routes/index.tsx` → reescrito como landing.
+- `src/routes/centros.tsx` *(nuevo)* → recibe el contenido actual del home (directorio + filtros + grid de centros). Se mueve tal cual desde `index.tsx`.
+- `Navbar`: agregar enlace "Centros" apuntando a `/centros`. El logo sigue yendo a `/`. El CTA "Registrar centro" se mantiene.
+- `LiveTicker`: sin cambios.
+- `routeTree.gen.ts` se regenera solo.
+
+## 2. Estructura de la landing (media, una pantalla por bloque)
 
 ```text
-"albergue" | "acopio" | "medico" | "cocina" | "distribucion"
+┌─ Hero
+│  H1, subtítulo, 2 CTAs (Ver centros · Registrar centro), microestado en vivo
+├─ Cómo funciona (3 pasos)
+│  1. Centros se registran  2. Mostramos qué necesitan  3. Tú llegas o donas
+├─ Para cada actor (4 bloques apilados)
+│  · Donadores particulares
+│  · Voluntarios
+│  · Coordinadores de centro
+│  · Empresas y diáspora
+├─ Tipos de centro (strip de 5 chips con KindBadge + microcopy)
+├─ Impacto en vivo (4 métricas de useImpact + link a /impacto)
+└─ Cierre: "Esto no reemplaza a nadie. Coordina." + CTAs finales
 ```
 
-`Center` se vuelve unión discriminada. Campos comunes: `id, nombre, kind, estado, ciudad, estadoVe, direccion, coordinador, telefono, email, horario, necesita[], tieneSuficiente[], actualizadoHaceMin`.
+### Bloque por actor
 
-Campos específicos por `kind`:
+Cada uno con la misma plantilla para mantener ritmo visual:
 
-- **albergue**: `familiasActuales`, `capacidadMax`, `capacidadPct`, `familiasHoy`
-- **acopio**: `itemsEnInventario`, `salidasSemana`, `m2Almacen`, `vehiculosDisponibles`
-- **medico**: `atencionesHoy`, `medicosActivos`, `medicamentosCriticos[]`, `tieneQuirofano: boolean`
-- **cocina**: `racionesDia`, `racionesCapacidad`, `cocinerosActivos`, `proximaEntrega: string`
-- **distribucion**: `familiasRuta`, `entregasHoy`, `zonasCubiertas[]`, `vehiculosActivos`
+- Etiqueta corta en DM Mono uppercase (ej. `DONADOR`).
+- Título de una línea ("Encuentra dónde tu donación rinde hoy").
+- 2-3 bullets de qué puede hacer.
+- 1 CTA contextual:
+  - Donadores → `/centros?need=…`
+  - Voluntarios → `/voluntarios`
+  - Coordinadores → `/registrar-centro`
+  - Empresas/diáspora → `/centros?kind=acopio,distribucion` + nota "Próximamente: convenios y constancias"
 
-Catálogos nuevos: `CENTER_KINDS` con `{ id, label, labelPlural, microcopy, icon, color }`. Cada uno hereda un color semántico ya existente del sistema (sin agregar tokens nuevos): albergue → operational, acopio → text-main, médico → critical, cocina → caution, distribución → resolved.
+Layout: grid de 2 columnas en desktop (alternando lado de la etiqueta para romper monotonía sin ser decorativo), 1 columna en mobile. Borde superior 0.5px entre bloques.
 
-10 centros mock (2 por tipo) con datos realistas en Caracas, La Guaira, Maracay, Valencia, San Felipe y Barquisimeto. Reemplazo total — los 6 actuales se descartan.
+### Tipos de centro
 
-`TOP_DEMAND` y `RECENT_ACTIVITY` se reescriben para reflejar la mezcla de tipos (ej. "Cocina Catia preparó 800 raciones", "Acopio Chacao despachó 2 camiones").
+Reusar `KindBadge` existente. Strip horizontal con los 5 tipos + una línea de microcopy cada uno (sacada de `CENTER_KINDS` en `mock.ts`).
 
-`IMPACT_METRICS` agrega desglose por tipo: `{ albergues, acopios, medicos, cocinas, distribucion }` además de los totales.
+### Impacto en vivo
 
-## 2. Componentes UI nuevos (`src/components/ui-vh/`)
+Reusar `useImpact()`. 4 números grandes (familias, centros activos, necesidades cubiertas hoy, voluntarios). Link "Ver desglose completo →" a `/impacto`.
 
-- **`KindBadge.tsx`** — pill tipográfica con label corto (ALB / ACO / MED / COC / DIST) + nombre completo opcional. Borde 0.5px con color del tipo, sin fill.
-- **`KindMetric.tsx`** — componente polimórfico que recibe `center` y renderiza la métrica clave del tipo (barra, contador o lista corta) con la misma altura visual en todos los tipos para que las cards alineen.
-- `CapacityBar` se mantiene, ahora solo usada por albergue/cocina.
+## 3. Componentes
 
-## 3. Filtros (`src/components/centers/FiltersPanel.tsx`)
+- `src/components/landing/Hero.tsx` *(nuevo)*
+- `src/components/landing/HowItWorks.tsx` *(nuevo)* — 3 pasos
+- `src/components/landing/ActorBlock.tsx` *(nuevo)* — plantilla reutilizable, props: `etiqueta, titulo, bullets[], cta:{label,to,params?}`
+- `src/components/landing/KindStrip.tsx` *(nuevo)* — strip de los 5 tipos
+- `src/components/landing/ImpactStrip.tsx` *(nuevo)* — 4 métricas + link
 
-Nuevo bloque **superior** "Tipo de centro" — primera decisión del usuario. Lista vertical con checkbox por tipo + contador (`Albergues · 2`). Múltiple selección. Estado `kinds: CenterKind[]` en el filtro; vacío = todos.
+Sin nuevos tokens de color. Sin box-shadow (salvo `:focus-visible`). Tipografía y bordes 0.5px del sistema. Cero emojis y cero numeración decorativa — los pasos van con label en DM Mono (`PASO UNO`, `PASO DOS`, `PASO TRES`).
 
-Debajo siguen los filtros existentes: búsqueda, estado operacional, necesidades.
+## 4. Archivos a tocar
 
-En mobile (sheet) el bloque de tipo aparece primero.
+- `src/routes/index.tsx` — reemplazo total: landing.
+- `src/routes/centros.tsx` *(nuevo)* — contenido actual del home.
+- `src/components/layout/Navbar.tsx` — agregar enlace "Centros".
+- `src/components/landing/*` — 5 componentes nuevos.
 
-## 4. Hook (`src/hooks/useCenters.ts`)
+## 5. Fuera de alcance
 
-`CenterFilters` agrega `kinds?: CenterKind[]`. Filtrado por intersección. Firma estable, devuelve siempre `{ centers, total, isLoading }`.
-
-`useImpact` devuelve también el desglose por tipo.
-
-## 5. Card (`src/components/centers/CenterCard.tsx`)
-
-- Esquina superior izquierda: `KindBadge` (siempre visible, antes que el StatusPill).
-- Header: nombre + ciudad.
-- Cuerpo: `KindMetric` (cambia por tipo, misma altura reservada ~64px).
-- Footer: necesidades top 3 + "actualizado hace Xm".
-- Borde lateral izquierdo 2px con color del tipo (no del estado) — el estado va en pill arriba a la derecha. Esto hace el tipo legible desde lejos sin agregar peso visual.
-
-## 6. Detalle de centro (`src/routes/centro.$id.tsx`)
-
-Switch por `kind` en la columna principal:
-
-- **albergue**: bloque "Capacidad familiar" con barra + cifras.
-- **acopio**: bloque "Inventario y flujo" con items en almacén, salidas/semana, vehículos.
-- **medico**: bloque "Atención médica" con atenciones/día, médicos activos, lista de medicamentos críticos, indicador de quirófano.
-- **cocina**: bloque "Producción de raciones" con barra raciones/día vs capacidad + próxima entrega.
-- **distribucion**: bloque "Rutas activas" con familias en ruta, entregas hoy, zonas cubiertas, vehículos.
-
-Sidebar 40%: igual que ahora (necesidades + tiene + form de llegada), con el form adaptando el copy ("Llegar como voluntario" / "Coordinar entrega de donación" / "Ofrecer servicio médico" según tipo).
-
-## 7. Formulario de registro (`src/routes/registrar-centro.tsx`)
-
-Primera sección "Sobre el centro" — el campo `tipo` cambia de `iglesia/escuela/...` (que era infraestructura física) a **`kind`** (función operativa: albergue/acopio/médico/cocina/distribución). Infraestructura pasa a campo secundario "Tipo de espacio físico".
-
-Sección "Situación actual" se vuelve condicional según `kind` seleccionado — campos dinámicos: si albergue muestra capacidad familiar; si acopio muestra m² y vehículos; si médico muestra médicos activos y especialidades; etc.
-
-Microcopy debajo del selector de tipo explica brevemente cada flujo en una línea.
-
-## 8. Página de impacto (`src/routes/impacto.tsx`)
-
-Hero metrics: 4 cifras globales + **strip horizontal con desglose por tipo** debajo (5 chips: `47 albergues · 23 acopios · 12 puntos médicos · 8 cocinas · 6 rutas`).
-
-Sección nueva "Por tipo de operación" con mini-cards (una por tipo) mostrando: total de centros, métrica agregada del tipo (familias alojadas / items movidos / atenciones / raciones / entregas), top necesidad.
-
-`TOP_DEMAND` y tabla de actividad se mantienen pero los items mezclan acciones de los 5 tipos.
-
-## 9. LiveTicker (`src/components/layout/LiveTicker.tsx`)
-
-Los mensajes rotativos incluyen los 5 tipos para que la diversidad se perciba desde la primera pantalla.
-
-## 10. Restricciones (sin cambios)
-
-- Cero tokens de color nuevos — reuso del sistema actual.
-- Cero box-shadow salvo `:focus-visible`.
-- Tipografía y bordes 0.5px intactos.
-- Sin numeración decorativa.
-- Empty states como instrucción.
-- Toasts vía sonner, sin persistencia.
-
-## Detalles técnicos
-
-- **Unión discriminada**: `Center` queda como `AlbergueCenter | AcopioCenter | MedicoCenter | CocinaCenter | DistribucionCenter`, todos extienden `BaseCenter`. Los componentes que renderizan campos específicos usan narrowing por `kind`.
-- **Hooks**: firma sin cambios salvo el nuevo filtro `kinds`. Cero acoplamiento a la fuente de datos — sigue listo para Cloud en Fase 2.
-- **Sin rutas nuevas**: la diferenciación por tipo se resuelve con filtros y badges, no con tabs ni rutas separadas (consistente con tu elección).
-- **Sin numeración / sin emojis** en los badges de tipo: label de 3-4 letras en DM Mono uppercase con `tracking-label`.
-- **Mobile**: el bloque de tipo en el sheet de filtros usa los mismos checkboxes, no un selector segmentado.
-
-## Archivos a tocar
-
-- `src/data/mock.ts` — reescritura completa de tipos y data
-- `src/hooks/useCenters.ts`, `src/hooks/useImpact.ts` — soporte `kinds` y desglose
-- `src/components/ui-vh/KindBadge.tsx` *(nuevo)*
-- `src/components/ui-vh/KindMetric.tsx` *(nuevo)*
-- `src/components/centers/CenterCard.tsx` — badge tipo + métrica polimórfica + borde lateral por tipo
-- `src/components/centers/FiltersPanel.tsx` — bloque "Tipo de centro" arriba
-- `src/components/layout/LiveTicker.tsx` — mensajes de los 5 tipos
-- `src/routes/centro.$id.tsx` — bloques condicionales por kind + copy del form
-- `src/routes/registrar-centro.tsx` — selector de kind + campos condicionales
-- `src/routes/impacto.tsx` — desglose por tipo y mini-cards
-- `src/routes/index.tsx` — pasar filtro `kinds` al hook
+- No se tocan `/voluntarios`, `/registrar-centro`, `/necesidades`, `/impacto`, `/centro/$id`.
+- No se modifica `mock.ts` ni hooks.
+- No se agregan rutas extra (FAQ, equipo, manifiesto) — esos quedan para Fase 2 si los pides.

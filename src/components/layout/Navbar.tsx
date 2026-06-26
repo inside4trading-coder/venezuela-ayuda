@@ -3,7 +3,8 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 
 const LINKS = [
-  { to: "/", label: "Centros" },
+  { to: "/", label: "Inicio" },
+  { to: "/centros", label: "Centros" },
   { to: "/necesidades", label: "Necesidades" },
   { to: "/voluntarios", label: "Voluntarios" },
   { to: "/impacto", label: "Impacto" },

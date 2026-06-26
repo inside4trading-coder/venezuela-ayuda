@@ -1,0 +1,113 @@
+@import "tailwindcss" source(none);
+@source "../src";
+
+@theme inline {
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f0f0ee;
+  --color-border: #e4e4e2;
+  --color-text-main: #111111;
+  --color-text-muted: #6b7280;
+  --color-critical: #c8102e;
+  --color-operational: #1a56db;
+  --color-resolved: #057a55;
+  --color-caution: #b45309;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+/* Tokens shadcn legacy mapeados a nuestro sistema para que los componentes ui/ existentes no rompan */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text-main);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-main);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text-main);
+  --color-primary: var(--color-critical);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-surface-alt);
+  --color-secondary-foreground: var(--color-text-main);
+  --color-muted: var(--color-surface-alt);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-accent: var(--color-surface-alt);
+  --color-accent-foreground: var(--color-text-main);
+  --color-destructive: var(--color-critical);
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--color-border);
+  --color-ring: var(--color-operational);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    color: var(--color-text-main);
+  }
+  *:focus {
+    outline: none;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--color-operational);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-operational) 15%, transparent);
+  }
+}
+
+@layer utilities {
+  .border-hair {
+    border-width: 0.5px;
+  }
+  .tracking-label {
+    letter-spacing: 0.05em;
+  }
+}
+
+@keyframes vh-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes vh-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.vh-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: vh-marquee 40s linear infinite;
+}
+
+.vh-pulse-dot {
+  animation: vh-pulse 1.5s ease-in-out infinite;
+}

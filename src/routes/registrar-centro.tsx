@@ -1,0 +1,432 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import {
+  CENTER_KINDS,
+  ESTADOS_VENEZUELA,
+  KIND_BY_ID,
+  NEED_CATALOG,
+  type CenterKind,
+} from "@/data/mock";
+
+export const Route = createFileRoute("/registrar-centro")({
+  head: () => ({
+    meta: [
+      { title: "Registrar centro · Venezuela Ayuda" },
+      {
+        name: "description",
+        content:
+          "Registra un centro de coordinación humanitaria para coordinar ayuda tras el terremoto.",
+      },
+    ],
+  }),
+  component: RegisterCenter,
+});
+
+type Kind = CenterKind | "";
+
+interface FormState {
+  nombre: string;
+  kind: Kind;
+  espacio: string;
+  estadoVe: string;
+  ciudad: string;
+  direccion: string;
+  coordinador: string;
+  telefono: string;
+  email: string;
+  // dinámicos
+  capacidadMax: string;
+  familiasActuales: string;
+  m2Almacen: string;
+  vehiculosDisponibles: string;
+  medicosActivos: string;
+  tieneQuirofano: boolean;
+  racionesCapacidad: string;
+  cocinerosActivos: string;
+  familiasRuta: string;
+  zonasCubiertas: string;
+  // comunes
+  estado: string;
+  necesita: string[];
+  tiene: string[];
+  otras: string;
+}
+
+const EMPTY: FormState = {
+  nombre: "",
+  kind: "",
+  espacio: "",
+  estadoVe: "",
+  ciudad: "",
+  direccion: "",
+  coordinador: "",
+  telefono: "",
+  email: "",
+  capacidadMax: "",
+  familiasActuales: "",
+  m2Almacen: "",
+  vehiculosDisponibles: "",
+  medicosActivos: "",
+  tieneQuirofano: false,
+  racionesCapacidad: "",
+  cocinerosActivos: "",
+  familiasRuta: "",
+  zonasCubiertas: "",
+  estado: "",
+  necesita: [],
+  tiene: [],
+  otras: "",
+};
+
+const REQUIRED_BASE: (keyof FormState)[] = [
+  "nombre",
+  "kind",
+  "espacio",
+  "estadoVe",
+  "ciudad",
+  "direccion",
+  "coordinador",
+  "telefono",
+  "email",
+  "estado",
+];
+
+const REQUIRED_BY_KIND: Record<CenterKind, (keyof FormState)[]> = {
+  albergue: ["capacidadMax", "familiasActuales"],
+  acopio: ["m2Almacen", "vehiculosDisponibles"],
+  medico: ["medicosActivos"],
+  cocina: ["racionesCapacidad", "cocinerosActivos"],
+  distribucion: ["familiasRuta"],
+};
+
+function RegisterCenter() {
+  const [form, setForm] = useState<FormState>(EMPTY);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleArr = (k: "necesita" | "tiene", v: string) =>
+    setForm((f) => ({
+      ...f,
+      [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v],
+    }));
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const next: typeof errors = {};
+    const required: (keyof FormState)[] = [
+      ...REQUIRED_BASE,
+      ...(form.kind ? REQUIRED_BY_KIND[form.kind] : []),
+    ];
+    required.forEach((k) => {
+      const v = form[k];
+      if (typeof v === "string" && !v.trim()) next[k] = "Este campo es requerido";
+      if (typeof v === "boolean" && v === false && k !== "tieneQuirofano") next[k] = "Requerido";
+    });
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      next.email = "Email no válido";
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
+    toast.success("Centro registrado — te contactamos en menos de 2 horas");
+    setForm(EMPTY);
+  };
+
+  const kindMeta = form.kind ? KIND_BY_ID[form.kind] : null;
+
+  return (
+    <div className="max-w-[640px] mx-auto px-4 py-8 lg:py-12">
+      <header className="mb-8">
+        <h1 className="font-display font-semibold text-[28px] leading-tight">
+          Registrar centro
+        </h1>
+        <p className="mt-1 text-[14px] text-[var(--color-text-muted)]">
+          Si abriste un espacio para recibir familias, donaciones, atención médica, raciones o
+          coordinar entregas, regístralo aquí. Verificamos antes de publicar.
+        </p>
+      </header>
+
+      <form onSubmit={onSubmit} className="space-y-10" noValidate>
+        <Section title="Sobre el centro">
+          <Field label="Nombre del centro" required error={errors.nombre}>
+            <TextInput value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
+          </Field>
+
+          <Field label="Tipo de operación" required error={errors.kind}>
+            <Select
+              value={form.kind}
+              onChange={(e) => set("kind", e.target.value as Kind)}
+            >
+              <option value="">Selecciona…</option>
+              {CENTER_KINDS.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.label}
+                </option>
+              ))}
+            </Select>
+            {kindMeta && (
+              <span className="mt-1 block text-[12px] text-[var(--color-text-muted)]">
+                {kindMeta.microcopy}
+              </span>
+            )}
+          </Field>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Tipo de espacio físico" required error={errors.espacio}>
+              <TextInput
+                value={form.espacio}
+                onChange={(e) => set("espacio", e.target.value)}
+                placeholder="Iglesia, escuela, galpón…"
+              />
+            </Field>
+            <Field label="Estado" required error={errors.estadoVe}>
+              <Select value={form.estadoVe} onChange={(e) => set("estadoVe", e.target.value)}>
+                <option value="">Selecciona…</option>
+                {ESTADOS_VENEZUELA.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Ciudad o municipio" required error={errors.ciudad}>
+            <TextInput value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)} />
+          </Field>
+          <Field label="Dirección exacta" required error={errors.direccion}>
+            <TextInput
+              value={form.direccion}
+              onChange={(e) => set("direccion", e.target.value)}
+            />
+          </Field>
+          <Field label="Coordinador" required error={errors.coordinador}>
+            <TextInput
+              value={form.coordinador}
+              onChange={(e) => set("coordinador", e.target.value)}
+            />
+          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Teléfono" required error={errors.telefono}>
+              <TextInput
+                value={form.telefono}
+                onChange={(e) => set("telefono", e.target.value)}
+                placeholder="+58 ..."
+              />
+            </Field>
+            <Field label="Email" required error={errors.email}>
+              <TextInput
+                type="email"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Situación actual">
+          {!form.kind && (
+            <p className="text-[13px] text-[var(--color-text-muted)] italic">
+              Selecciona primero el tipo de operación para mostrar los campos relevantes.
+            </p>
+          )}
+
+          {form.kind === "albergue" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Capacidad máxima (familias)" required error={errors.capacidadMax}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.capacidadMax}
+                  onChange={(e) => set("capacidadMax", e.target.value)}
+                />
+              </Field>
+              <Field label="Familias actualmente" required error={errors.familiasActuales}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.familiasActuales}
+                  onChange={(e) => set("familiasActuales", e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+
+          {form.kind === "acopio" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Superficie de almacén (m²)" required error={errors.m2Almacen}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.m2Almacen}
+                  onChange={(e) => set("m2Almacen", e.target.value)}
+                />
+              </Field>
+              <Field
+                label="Vehículos disponibles"
+                required
+                error={errors.vehiculosDisponibles}
+              >
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.vehiculosDisponibles}
+                  onChange={(e) => set("vehiculosDisponibles", e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+
+          {form.kind === "medico" && (
+            <>
+              <Field label="Médicos activos" required error={errors.medicosActivos}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.medicosActivos}
+                  onChange={(e) => set("medicosActivos", e.target.value)}
+                />
+              </Field>
+              <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.tieneQuirofano}
+                  onChange={(e) => set("tieneQuirofano", e.target.checked)}
+                  className="accent-[var(--color-critical)]"
+                />
+                <span>Cuenta con quirófano de campaña</span>
+              </label>
+            </>
+          )}
+
+          {form.kind === "cocina" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Capacidad de raciones / día"
+                required
+                error={errors.racionesCapacidad}
+              >
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.racionesCapacidad}
+                  onChange={(e) => set("racionesCapacidad", e.target.value)}
+                />
+              </Field>
+              <Field label="Cocineros activos" required error={errors.cocinerosActivos}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.cocinerosActivos}
+                  onChange={(e) => set("cocinerosActivos", e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+
+          {form.kind === "distribucion" && (
+            <>
+              <Field label="Familias en ruta" required error={errors.familiasRuta}>
+                <TextInput
+                  type="number"
+                  min="0"
+                  value={form.familiasRuta}
+                  onChange={(e) => set("familiasRuta", e.target.value)}
+                />
+              </Field>
+              <Field label="Zonas cubiertas">
+                <TextInput
+                  value={form.zonasCubiertas}
+                  onChange={(e) => set("zonasCubiertas", e.target.value)}
+                  placeholder="Macuto, Caraballeda, Naiguatá"
+                />
+              </Field>
+            </>
+          )}
+
+          <Field label="Estado del centro" required error={errors.estado}>
+            <Select value={form.estado} onChange={(e) => set("estado", e.target.value)}>
+              <option value="">Selecciona…</option>
+              <option value="activo">Activo</option>
+              <option value="urgente">Urgente</option>
+              <option value="capacidad-llena">Capacidad llena</option>
+              <option value="cerrado">Cerrado temporalmente</option>
+            </Select>
+          </Field>
+        </Section>
+
+        <Section title="Qué necesitan">
+          <CheckGrid
+            options={NEED_CATALOG as readonly string[]}
+            selected={form.necesita}
+            onToggle={(v) => toggleArr("necesita", v)}
+          />
+          <Field label="Otras necesidades">
+            <TextArea value={form.otras} onChange={(e) => set("otras", e.target.value)} />
+          </Field>
+        </Section>
+
+        <Section title="Qué tienen en abundancia">
+          <CheckGrid
+            options={NEED_CATALOG as readonly string[]}
+            selected={form.tiene}
+            onToggle={(v) => toggleArr("tiene", v)}
+          />
+        </Section>
+
+        <div>
+          <button
+            type="submit"
+            className="w-full h-12 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[16px] hover:opacity-90"
+          >
+            Registrar centro
+          </button>
+          <p className="mt-3 text-[13px] text-[var(--color-text-muted)] text-center">
+            Verificamos la información antes de publicarla. Te contactamos en menos de 2 horas.
+          </p>
+          <p className="mt-2 text-[12px] text-[var(--color-text-muted)] text-center italic">
+            Próximamente podrás crear tu cuenta y gestionar todo desde tu panel.
+          </p>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <h2 className="font-display font-semibold text-[22px] leading-tight">{title}</h2>
+      <div className="h-px bg-[var(--color-border)]" />
+      <div className="space-y-4 pt-2">{children}</div>
+    </section>
+  );
+}
+
+function CheckGrid({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: readonly string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-[13px]">
+      {options.map((o) => (
+        <label key={o} className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selected.includes(o)}
+            onChange={() => onToggle(o)}
+            className="accent-[var(--color-operational)]"
+          />
+          <span>{o}</span>
+        </label>
+      ))}
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { AuthButton } from "@/components/auth/AuthButton";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, ROLE_PANEL_PATH } from "@/hooks/useProfile";
 
 const LINKS = [
   { to: "/", label: "Inicio" },
@@ -29,7 +29,9 @@ function PulseLogo() {
 export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
-  const { isAdmin, isCoordinator } = useProfile();
+  const { isAdmin, isCoordinator, profile } = useProfile();
+  const panelPath = profile && profile.role !== "pending" ? ROLE_PANEL_PATH[profile.role] : null;
+  const showRegisterCenter = !isCoordinator && !isAdmin && (!profile || profile.role === "pending");
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
@@ -67,13 +69,13 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <AuthButton />
-          {isCoordinator && (
+          {panelPath && !isAdmin && (
             <Link
-              to="/panel/centro"
+              to={panelPath}
               className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"
               style={{ borderWidth: "0.5px" }}
             >
-              Mi centro
+              Mi panel
             </Link>
           )}
           {isAdmin && (
@@ -85,7 +87,7 @@ export function Navbar() {
               Admin
             </Link>
           )}
-          {!isCoordinator && !isAdmin && (
+          {showRegisterCenter && (
             <Link
               to="/registrar-centro"
               className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"

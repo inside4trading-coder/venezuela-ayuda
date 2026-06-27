@@ -2,14 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, ROLE_LABEL, type ProfileRole } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { AuthButton } from "@/components/auth/AuthButton";
 
 export const Route = createFileRoute("/panel/admin")({
-  head: () => ({
-    meta: [{ title: "Panel admin · Venezuela Ayuda" }],
-  }),
+  head: () => ({ meta: [{ title: "Panel admin · Venezuela Ayuda" }] }),
   component: AdminPanel,
 });
 
@@ -26,17 +24,29 @@ interface PendingCenter {
   verified_at: string | null;
 }
 
+interface PendingProfile {
+  id: string;
+  role: ProfileRole;
+  full_name: string | null;
+  organization: string | null;
+  city: string | null;
+  state: string | null;
+  bio: string | null;
+  created_at: string;
+}
+
 function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: profLoading } = useProfile();
-  const [pending, setPending] = useState<PendingCenter[]>([]);
-  const [verified, setVerified] = useState<PendingCenter[]>([]);
+  const [pendingCenters, setPendingCenters] = useState<PendingCenter[]>([]);
+  const [verifiedCenters, setVerifiedCenters] = useState<PendingCenter[]>([]);
+  const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: p, error: pe }, { data: v, error: ve }] = await Promise.all([
+    const [c1, c2, p] = await Promise.all([
       supabase
         .from("centers")
         .select("id, name, type, city, state, address, phone, created_at, created_by, verified_at")
@@ -48,11 +58,19 @@ function AdminPanel() {
         .not("verified_at", "is", null)
         .order("verified_at", { ascending: false })
         .limit(20),
+      supabase
+        .from("profiles")
+        .select("id, role, full_name, organization, city, state, bio, created_at")
+        .in("role", ["voluntario_medico", "autoridad"])
+        .is("verified_at", null)
+        .order("created_at", { ascending: false }),
     ]);
-    if (pe) console.error(pe);
-    if (ve) console.error(ve);
-    setPending((p as PendingCenter[]) ?? []);
-    setVerified((v as PendingCenter[]) ?? []);
+    if (c1.error) console.error(c1.error);
+    if (c2.error) console.error(c2.error);
+    if (p.error) console.error(p.error);
+    setPendingCenters((c1.data as PendingCenter[]) ?? []);
+    setVerifiedCenters((c2.data as PendingCenter[]) ?? []);
+    setPendingProfiles((p.data as PendingProfile[]) ?? []);
     setLoading(false);
   };
 
@@ -86,33 +104,50 @@ function AdminPanel() {
     );
   }
 
-  const approve = async (id: string) => {
+  const approveCenter = async (id: string) => {
     setBusyId(id);
     const { error } = await supabase
       .from("centers")
       .update({ verified_at: new Date().toISOString(), verified: true })
       .eq("id", id);
     setBusyId(null);
-    if (error) {
-      console.error(error);
-      toast.error("No se pudo aprobar");
-      return;
-    }
-    toast.success("Centro aprobado y publicado");
+    if (error) { toast.error("No se pudo aprobar"); return; }
+    toast.success("Centro publicado");
     load();
   };
 
-  const reject = async (id: string) => {
-    if (!confirm("¿Eliminar este centro? Esta acción no se puede deshacer.")) return;
+  const rejectCenter = async (id: string) => {
+    if (!confirm("¿Eliminar este centro? Acción irreversible.")) return;
     setBusyId(id);
     const { error } = await supabase.from("centers").delete().eq("id", id);
     setBusyId(null);
-    if (error) {
-      console.error(error);
-      toast.error("No se pudo eliminar");
-      return;
-    }
+    if (error) { toast.error("No se pudo eliminar"); return; }
     toast.success("Centro rechazado");
+    load();
+  };
+
+  const verifyProfile = async (id: string, note?: string) => {
+    setBusyId(id);
+    const patch: Record<string, any> = { verified_at: new Date().toISOString() };
+    if (note) patch.verification_note = note;
+    const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+    setBusyId(null);
+    if (error) { toast.error("No se pudo verificar"); return; }
+    toast.success("Perfil verificado");
+    load();
+  };
+
+  const denyProfile = async (id: string) => {
+    const note = prompt("Motivo del rechazo (visible al usuario):");
+    if (note === null) return;
+    setBusyId(id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: "pending", verification_note: note || null })
+      .eq("id", id);
+    setBusyId(null);
+    if (error) { toast.error("No se pudo rechazar"); return; }
+    toast.success("Perfil rechazado y devuelto a pendiente");
     load();
   };
 
@@ -121,24 +156,81 @@ function AdminPanel() {
       <header>
         <h1 className="font-display font-semibold text-[28px] leading-tight">Panel de admin</h1>
         <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
-          Verifica centros nuevos antes de que se publiquen en el directorio.
+          Verifica centros y perfiles antes de habilitarlos en la plataforma.
         </p>
       </header>
 
       <section className="space-y-4">
         <h2 className="font-display font-semibold text-[18px]">
-          Pendientes ({pending.length})
+          Perfiles pendientes ({pendingProfiles.length})
         </h2>
-
         {loading ? (
           <p className="text-[13px] text-[var(--color-text-muted)]">Cargando…</p>
-        ) : pending.length === 0 ? (
-          <div className="rounded-lg border-hair border-[var(--color-border)] p-8 text-center text-[13px] text-[var(--color-text-muted)]">
-            Sin centros pendientes — todo al día.
+        ) : pendingProfiles.length === 0 ? (
+          <div className="rounded-lg border-hair border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-muted)]">
+            Sin perfiles pendientes.
           </div>
         ) : (
           <div className="space-y-3">
-            {pending.map((c) => (
+            {pendingProfiles.map((p) => (
+              <article
+                key={p.id}
+                className="rounded-lg border-hair border-[var(--color-caution)] bg-[var(--color-surface)] p-5"
+                style={{ borderLeftWidth: "3px" }}
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="font-display font-semibold text-[16px]">
+                      {p.full_name ?? "(sin nombre)"}
+                    </div>
+                    <div className="mt-1 text-[13px] text-[var(--color-text-muted)]">
+                      {ROLE_LABEL[p.role]}
+                      {p.organization && ` · ${p.organization}`}
+                      {(p.city || p.state) && ` · ${[p.city, p.state].filter(Boolean).join(", ")}`}
+                    </div>
+                    {p.bio && (
+                      <p className="mt-2 text-[13px] whitespace-pre-wrap">{p.bio}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => verifyProfile(p.id)}
+                      disabled={busyId === p.id}
+                      className="h-9 px-4 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold disabled:opacity-50"
+                    >
+                      Verificar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => denyProfile(p.id)}
+                      disabled={busyId === p.id}
+                      className="h-9 px-4 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-[13px] disabled:opacity-50"
+                      style={{ borderWidth: "0.5px" }}
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display font-semibold text-[18px]">
+          Centros pendientes ({pendingCenters.length})
+        </h2>
+        {loading ? (
+          <p className="text-[13px] text-[var(--color-text-muted)]">Cargando…</p>
+        ) : pendingCenters.length === 0 ? (
+          <div className="rounded-lg border-hair border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-muted)]">
+            Sin centros pendientes.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pendingCenters.map((c) => (
               <article
                 key={c.id}
                 className="rounded-lg border-hair border-[var(--color-caution)] bg-[var(--color-surface)] p-5"
@@ -146,16 +238,12 @@ function AdminPanel() {
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">
-                    <div className="font-display font-semibold text-[16px]">
-                      {c.name ?? "Sin nombre"}
-                    </div>
+                    <div className="font-display font-semibold text-[16px]">{c.name ?? "Sin nombre"}</div>
                     <div className="mt-1 text-[13px] text-[var(--color-text-muted)]">
                       {c.type} · {c.city}, {c.state}
                     </div>
                     <div className="mt-2 text-[13px]">{c.address}</div>
-                    {c.phone && (
-                      <div className="text-[13px] font-mono">{c.phone}</div>
-                    )}
+                    {c.phone && <div className="text-[13px] font-mono">{c.phone}</div>}
                     <div className="mt-2 text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
                       Registrado {new Date(c.created_at).toLocaleString("es-VE")}
                     </div>
@@ -163,7 +251,7 @@ function AdminPanel() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => approve(c.id)}
+                      onClick={() => approveCenter(c.id)}
                       disabled={busyId === c.id}
                       className="h-9 px-4 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold disabled:opacity-50"
                     >
@@ -171,7 +259,7 @@ function AdminPanel() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => reject(c.id)}
+                      onClick={() => rejectCenter(c.id)}
                       disabled={busyId === c.id}
                       className="h-9 px-4 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-[13px] disabled:opacity-50"
                       style={{ borderWidth: "0.5px" }}
@@ -190,7 +278,7 @@ function AdminPanel() {
         <h2 className="font-display font-semibold text-[18px]">
           Verificados recientemente
         </h2>
-        {verified.length === 0 ? (
+        {verifiedCenters.length === 0 ? (
           <p className="text-[13px] text-[var(--color-text-muted)]">Sin verificados aún.</p>
         ) : (
           <div className="rounded-lg border-hair border-[var(--color-border)] overflow-hidden">
@@ -203,12 +291,10 @@ function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {verified.map((c, i) => (
+                {verifiedCenters.map((c, i) => (
                   <tr key={c.id} className={i % 2 === 0 ? "bg-[var(--color-surface-alt)]" : ""}>
                     <td className="px-3 py-2">{c.name}</td>
-                    <td className="px-3 py-2 text-[var(--color-text-muted)]">
-                      {c.city}, {c.state}
-                    </td>
+                    <td className="px-3 py-2 text-[var(--color-text-muted)]">{c.city}, {c.state}</td>
                     <td className="px-3 py-2 text-[12px] font-mono text-[var(--color-text-muted)]">
                       {c.verified_at && new Date(c.verified_at).toLocaleString("es-VE")}
                     </td>

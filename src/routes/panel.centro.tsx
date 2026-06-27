@@ -51,6 +51,23 @@ const INV_STATUS: Array<{ value: string; label: string }> = [
   { value: "critico", label: "Crítico" },
 ];
 
+// Etiquetas contextuales de capacidad según tipo de centro
+const CAPACITY_LABELS: Record<string, { total: string; used: string }> = {
+  albergue:     { total: "Capacidad familias",    used: "Familias actuales" },
+  acopio:       { total: "Superficie almacén m²", used: "Ítems en stock" },
+  medico:       { total: "Capacidad atenciones/día", used: "Atenciones hoy" },
+  cocina:       { total: "Raciones/día capacidad",   used: "Raciones servidas hoy" },
+  distribucion: { total: "Familias en ruta planeada", used: "Entregas hoy" },
+};
+
+const KIND_HINTS: Record<string, string> = {
+  albergue:     "Mantén el conteo de familias actualizado para que voluntarios y donadores sepan si hay cupo.",
+  acopio:       "Mantén el inventario al día; los transportistas leen esta información para programar rutas.",
+  medico:       "Reporta atenciones diarias y marca como crítico cualquier medicamento que falte.",
+  cocina:       "Actualiza raciones servidas y agrega insumos críticos al inventario.",
+  distribucion: "Registra entregas diarias y coordina con transportistas vía /panel/transportista.",
+};
+
 function CenterPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const { profile, isLoading: profLoading, isCoordinator, isAdmin } = useProfile();
@@ -235,6 +252,13 @@ function CenterPanel() {
         </div>
       </header>
 
+      {center.type && KIND_HINTS[center.type] && (
+        <div className="rounded-lg border-hair border-[var(--color-operational)] bg-[var(--color-surface)] p-4 text-[13px]"
+             style={{ borderLeftWidth: "3px" }}>
+          {KIND_HINTS[center.type]}
+        </div>
+      )}
+
       <section className="space-y-4">
         <h2 className="font-display font-semibold text-[18px]">Datos del centro</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -248,10 +272,10 @@ function CenterPanel() {
               ))}
             </Select>
           </Field>
-          <Field label="Capacidad total">
+          <Field label={CAPACITY_LABELS[center.type ?? ""]?.total ?? "Capacidad total"}>
             <TextInput type="number" min="0" value={center.capacity ?? ""} onChange={(e) => setCenter({ ...center, capacity: e.target.value === "" ? null : Number(e.target.value) })} />
           </Field>
-          <Field label="Capacidad usada">
+          <Field label={CAPACITY_LABELS[center.type ?? ""]?.used ?? "Capacidad usada"}>
             <TextInput type="number" min="0" value={center.capacity_used ?? ""} onChange={(e) => setCenter({ ...center, capacity_used: e.target.value === "" ? null : Number(e.target.value) })} />
           </Field>
           <Field label="Teléfono">

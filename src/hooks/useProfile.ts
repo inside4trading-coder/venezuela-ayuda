@@ -5,10 +5,15 @@ import { useAuth } from "@/hooks/useAuth";
 export type ProfileRole =
   | "pending"
   | "donador"
+  | "empresa"
+  | "diaspora"
   | "voluntario"
+  | "voluntario_medico"
+  | "transportista"
   | "coordinador"
-  | "admin"
-  | "observador";
+  | "autoridad"
+  | "observador"
+  | "admin";
 
 export interface Profile {
   id: string;
@@ -20,7 +25,23 @@ export interface Profile {
   city: string | null;
   organization: string | null;
   avatar_url: string | null;
+  company_name: string | null;
+  tax_id: string | null;
+  country: string | null;
+  vehicle_type: string | null;
+  vehicle_capacity_kg: number | null;
+  license_plate: string | null;
+  skills: string[];
+  zones: string[];
+  verified_at: string | null;
+  verification_note: string | null;
+  bio: string | null;
 }
+
+const SELECT_COLS =
+  "id, role, center_id, full_name, phone, state, city, organization, avatar_url, company_name, tax_id, country, vehicle_type, vehicle_capacity_kg, license_plate, skills, zones, verified_at, verification_note, bio";
+
+const REQUIRES_VERIFICATION: ProfileRole[] = ["voluntario_medico", "autoridad"];
 
 export function useProfile() {
   const { user, isLoading: authLoading } = useAuth();
@@ -40,7 +61,7 @@ export function useProfile() {
 
     supabase
       .from("profiles")
-      .select("id, role, center_id, full_name, phone, state, city, organization, avatar_url")
+      .select(SELECT_COLS)
       .eq("id", user.id)
       .single()
       .then(({ data, error }) => {
@@ -63,7 +84,7 @@ export function useProfile() {
     if (!user) return;
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, role, center_id, full_name, phone, state, city, organization, avatar_url")
+      .select(SELECT_COLS)
       .eq("id", user.id)
       .single();
     if (!error && data) setProfile(data as Profile);
@@ -72,6 +93,52 @@ export function useProfile() {
   const isAdmin = profile?.role === "admin";
   const isCoordinator = profile?.role === "coordinador";
   const isPending = profile?.role === "pending";
+  const requiresVerification = profile
+    ? REQUIRES_VERIFICATION.includes(profile.role)
+    : false;
+  const isVerified = !!profile?.verified_at;
+  const isActive = profile
+    ? !REQUIRES_VERIFICATION.includes(profile.role) || isVerified
+    : false;
 
-  return { profile, isAdmin, isCoordinator, isPending, isLoading, refresh };
+  return {
+    profile,
+    isAdmin,
+    isCoordinator,
+    isPending,
+    requiresVerification,
+    isVerified,
+    isActive,
+    isLoading,
+    refresh,
+  };
 }
+
+// Mapa rol → ruta de panel (usado por Navbar y onboarding redirect)
+export const ROLE_PANEL_PATH: Record<ProfileRole, string> = {
+  pending: "/onboarding",
+  donador: "/panel/donador",
+  empresa: "/panel/empresa",
+  diaspora: "/panel/diaspora",
+  voluntario: "/panel/voluntario",
+  voluntario_medico: "/panel/voluntario",
+  transportista: "/panel/transportista",
+  coordinador: "/panel/centro",
+  autoridad: "/panel/autoridad",
+  observador: "/panel/ong",
+  admin: "/panel/admin",
+};
+
+export const ROLE_LABEL: Record<ProfileRole, string> = {
+  pending: "Sin rol",
+  donador: "Donador",
+  empresa: "Empresa",
+  diaspora: "Diáspora",
+  voluntario: "Voluntario",
+  voluntario_medico: "Voluntario médico",
+  transportista: "Transportista",
+  coordinador: "Coordinador de centro",
+  autoridad: "Autoridad",
+  observador: "ONG / Observador",
+  admin: "Administrador",
+};

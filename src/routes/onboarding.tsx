@@ -1,9 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { HeartHandshake, Package, Users } from "lucide-react";
+import {
+  Building2,
+  Globe2,
+  HeartHandshake,
+  Package,
+  Stethoscope,
+  Truck,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile, type ProfileRole } from "@/hooks/useProfile";
+import { useProfile, type ProfileRole, ROLE_PANEL_PATH } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/onboarding")({
@@ -16,25 +24,54 @@ export const Route = createFileRoute("/onboarding")({
   component: Onboarding,
 });
 
-type SelfServiceRole = Extract<ProfileRole, "donador" | "voluntario" | "coordinador">;
+type SelfServiceRole = Exclude<
+  ProfileRole,
+  "pending" | "admin" | "observador"
+>;
 
 const ROLES: Array<{
   id: SelfServiceRole;
   title: string;
   desc: string;
   icon: typeof Package;
+  needsVerification?: boolean;
 }> = [
   {
     id: "donador",
     title: "Quiero donar",
-    desc: "Llevo especies o aporto recursos a un centro de acopio o albergue.",
+    desc: "Llevo especies o recursos a un centro de acopio o albergue.",
     icon: Package,
   },
   {
+    id: "empresa",
+    title: "Soy empresa",
+    desc: "Coordino donaciones en volumen y necesito constancia para mi compañía.",
+    icon: Building2,
+  },
+  {
+    id: "diaspora",
+    title: "Soy diáspora",
+    desc: "Vivo fuera y quiero aportar al esfuerzo desde el exterior.",
+    icon: Globe2,
+  },
+  {
     id: "voluntario",
-    title: "Quiero ser voluntario",
-    desc: "Aporto mi tiempo, habilidades o transporte donde se necesite.",
+    title: "Soy voluntario",
+    desc: "Aporto mi tiempo o habilidades donde se necesite.",
     icon: HeartHandshake,
+  },
+  {
+    id: "voluntario_medico",
+    title: "Soy voluntario médico",
+    desc: "Soy personal de salud y quiero atender en puntos médicos.",
+    icon: Stethoscope,
+    needsVerification: true,
+  },
+  {
+    id: "transportista",
+    title: "Soy transportista",
+    desc: "Tengo vehículo y puedo mover carga entre centros.",
+    icon: Truck,
   },
   {
     id: "coordinador",
@@ -51,9 +88,7 @@ function Onboarding() {
   const [selected, setSelected] = useState<SelfServiceRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading || profLoading) {
-    return <Centered>Cargando…</Centered>;
-  }
+  if (authLoading || profLoading) return <Centered>Cargando…</Centered>;
 
   if (!user) {
     return (
@@ -62,10 +97,7 @@ function Onboarding() {
         <p className="text-[13px] text-[var(--color-text-muted)] mb-4">
           Necesitas una cuenta de Google para elegir tu rol.
         </p>
-        <Link
-          to="/"
-          className="text-[13px] text-[var(--color-operational)] underline"
-        >
+        <Link to="/" className="text-[13px] text-[var(--color-operational)] underline">
           Volver al directorio
         </Link>
       </Centered>
@@ -80,10 +112,10 @@ function Onboarding() {
           Estás registrado como <strong>{profile.role}</strong>.
         </p>
         <Link
-          to="/"
-          className="text-[13px] text-[var(--color-operational)] underline"
+          to={ROLE_PANEL_PATH[profile.role]}
+          className="inline-block h-11 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] leading-[44px]"
         >
-          Ir al directorio
+          Ir a mi panel
         </Link>
       </Centered>
     );
@@ -99,11 +131,17 @@ function Onboarding() {
         .eq("id", user.id);
       if (error) throw error;
       await refresh();
-      toast.success("Rol guardado");
-      if (selected === "coordinador") {
+      const role = selected as ProfileRole;
+      const needsVerification = role === "voluntario_medico";
+      toast.success(
+        needsVerification
+          ? "Rol guardado — un admin revisará tus credenciales"
+          : "Rol guardado",
+      );
+      if (role === "coordinador") {
         navigate({ to: "/registrar-centro" });
       } else {
-        navigate({ to: "/" });
+        navigate({ to: ROLE_PANEL_PATH[role] });
       }
     } catch (err: any) {
       console.error(err);
@@ -114,17 +152,18 @@ function Onboarding() {
   };
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 py-10">
+    <div className="max-w-[1080px] mx-auto px-4 py-10">
       <header className="mb-8">
         <h1 className="font-display font-semibold text-[28px] leading-tight">
           ¿Cómo quieres ayudar?
         </h1>
-        <p className="mt-2 text-[14px] text-[var(--color-text-muted)]">
-          Elige el rol que mejor describe lo que vas a hacer. Puedes cambiarlo después.
+        <p className="mt-2 text-[14px] text-[var(--color-text-muted)] max-w-[600px]">
+          Elige el rol que mejor describe lo que vas a hacer. Los marcados con un punto
+          ámbar requieren verificación manual por un administrador.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {ROLES.map((r) => {
           const Icon = r.icon;
           const active = selected === r.id;
@@ -133,21 +172,33 @@ function Onboarding() {
               key={r.id}
               type="button"
               onClick={() => setSelected(r.id)}
-              className={`text-left p-5 rounded-lg border-hair transition ${
+              className={`relative text-left p-5 rounded-lg border-hair transition ${
                 active
                   ? "border-[var(--color-critical)] bg-[var(--color-surface)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-text-muted)]"
               }`}
               style={{ borderWidth: active ? "1px" : "0.5px" }}
             >
+              {r.needsVerification && (
+                <span
+                  className="absolute top-3 right-3 inline-block h-2 w-2 rounded-full"
+                  style={{ background: "var(--color-caution)" }}
+                  aria-label="Requiere verificación"
+                />
+              )}
               <Icon
                 className="h-5 w-5 mb-3"
                 style={{ color: active ? "var(--color-critical)" : "var(--color-text-muted)" }}
               />
-              <div className="font-display font-semibold text-[16px] mb-1">{r.title}</div>
+              <div className="font-display font-semibold text-[15px] mb-1">{r.title}</div>
               <div className="text-[13px] text-[var(--color-text-muted)] leading-snug">
                 {r.desc}
               </div>
+              {r.needsVerification && (
+                <div className="mt-3 text-[11px] uppercase tracking-label text-[var(--color-caution)]">
+                  Requiere verificación
+                </div>
+              )}
             </button>
           );
         })}
@@ -168,7 +219,5 @@ function Onboarding() {
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="max-w-[640px] mx-auto p-10 text-center">{children}</div>
-  );
+  return <div className="max-w-[640px] mx-auto p-10 text-center">{children}</div>;
 }

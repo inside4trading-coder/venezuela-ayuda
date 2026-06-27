@@ -17,7 +17,14 @@ import { Route as MarcaRouteImport } from './routes/marca'
 import { Route as ImpactoRouteImport } from './routes/impacto'
 import { Route as CentrosRouteImport } from './routes/centros'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PanelVoluntarioRouteImport } from './routes/panel.voluntario'
+import { Route as PanelTransportistaRouteImport } from './routes/panel.transportista'
+import { Route as PanelOngRouteImport } from './routes/panel.ong'
+import { Route as PanelEmpresaRouteImport } from './routes/panel.empresa'
+import { Route as PanelDonadorRouteImport } from './routes/panel.donador'
+import { Route as PanelDiasporaRouteImport } from './routes/panel.diaspora'
 import { Route as PanelCentroRouteImport } from './routes/panel.centro'
+import { Route as PanelAutoridadRouteImport } from './routes/panel.autoridad'
 import { Route as PanelAdminRouteImport } from './routes/panel.admin'
 import { Route as CentroIdRouteImport } from './routes/centro.$id'
 
@@ -61,9 +68,44 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelVoluntarioRoute = PanelVoluntarioRouteImport.update({
+  id: '/panel/voluntario',
+  path: '/panel/voluntario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelTransportistaRoute = PanelTransportistaRouteImport.update({
+  id: '/panel/transportista',
+  path: '/panel/transportista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelOngRoute = PanelOngRouteImport.update({
+  id: '/panel/ong',
+  path: '/panel/ong',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelEmpresaRoute = PanelEmpresaRouteImport.update({
+  id: '/panel/empresa',
+  path: '/panel/empresa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelDonadorRoute = PanelDonadorRouteImport.update({
+  id: '/panel/donador',
+  path: '/panel/donador',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelDiasporaRoute = PanelDiasporaRouteImport.update({
+  id: '/panel/diaspora',
+  path: '/panel/diaspora',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PanelCentroRoute = PanelCentroRouteImport.update({
   id: '/panel/centro',
   path: '/panel/centro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelAutoridadRoute = PanelAutoridadRouteImport.update({
+  id: '/panel/autoridad',
+  path: '/panel/autoridad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PanelAdminRoute = PanelAdminRouteImport.update({
@@ -88,7 +130,14 @@ export interface FileRoutesByFullPath {
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
+  '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/diaspora': typeof PanelDiasporaRoute
+  '/panel/donador': typeof PanelDonadorRoute
+  '/panel/empresa': typeof PanelEmpresaRoute
+  '/panel/ong': typeof PanelOngRoute
+  '/panel/transportista': typeof PanelTransportistaRoute
+  '/panel/voluntario': typeof PanelVoluntarioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,7 +150,14 @@ export interface FileRoutesByTo {
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
+  '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/diaspora': typeof PanelDiasporaRoute
+  '/panel/donador': typeof PanelDonadorRoute
+  '/panel/empresa': typeof PanelEmpresaRoute
+  '/panel/ong': typeof PanelOngRoute
+  '/panel/transportista': typeof PanelTransportistaRoute
+  '/panel/voluntario': typeof PanelVoluntarioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,7 +171,14 @@ export interface FileRoutesById {
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
+  '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/diaspora': typeof PanelDiasporaRoute
+  '/panel/donador': typeof PanelDonadorRoute
+  '/panel/empresa': typeof PanelEmpresaRoute
+  '/panel/ong': typeof PanelOngRoute
+  '/panel/transportista': typeof PanelTransportistaRoute
+  '/panel/voluntario': typeof PanelVoluntarioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,7 +193,14 @@ export interface FileRouteTypes {
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
+    | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/diaspora'
+    | '/panel/donador'
+    | '/panel/empresa'
+    | '/panel/ong'
+    | '/panel/transportista'
+    | '/panel/voluntario'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,7 +213,14 @@ export interface FileRouteTypes {
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
+    | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/diaspora'
+    | '/panel/donador'
+    | '/panel/empresa'
+    | '/panel/ong'
+    | '/panel/transportista'
+    | '/panel/voluntario'
   id:
     | '__root__'
     | '/'
@@ -156,7 +233,14 @@ export interface FileRouteTypes {
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
+    | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/diaspora'
+    | '/panel/donador'
+    | '/panel/empresa'
+    | '/panel/ong'
+    | '/panel/transportista'
+    | '/panel/voluntario'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -170,7 +254,14 @@ export interface RootRouteChildren {
   VoluntariosRoute: typeof VoluntariosRoute
   CentroIdRoute: typeof CentroIdRoute
   PanelAdminRoute: typeof PanelAdminRoute
+  PanelAutoridadRoute: typeof PanelAutoridadRoute
   PanelCentroRoute: typeof PanelCentroRoute
+  PanelDiasporaRoute: typeof PanelDiasporaRoute
+  PanelDonadorRoute: typeof PanelDonadorRoute
+  PanelEmpresaRoute: typeof PanelEmpresaRoute
+  PanelOngRoute: typeof PanelOngRoute
+  PanelTransportistaRoute: typeof PanelTransportistaRoute
+  PanelVoluntarioRoute: typeof PanelVoluntarioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -231,11 +322,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel/voluntario': {
+      id: '/panel/voluntario'
+      path: '/panel/voluntario'
+      fullPath: '/panel/voluntario'
+      preLoaderRoute: typeof PanelVoluntarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/transportista': {
+      id: '/panel/transportista'
+      path: '/panel/transportista'
+      fullPath: '/panel/transportista'
+      preLoaderRoute: typeof PanelTransportistaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/ong': {
+      id: '/panel/ong'
+      path: '/panel/ong'
+      fullPath: '/panel/ong'
+      preLoaderRoute: typeof PanelOngRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/empresa': {
+      id: '/panel/empresa'
+      path: '/panel/empresa'
+      fullPath: '/panel/empresa'
+      preLoaderRoute: typeof PanelEmpresaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/donador': {
+      id: '/panel/donador'
+      path: '/panel/donador'
+      fullPath: '/panel/donador'
+      preLoaderRoute: typeof PanelDonadorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/diaspora': {
+      id: '/panel/diaspora'
+      path: '/panel/diaspora'
+      fullPath: '/panel/diaspora'
+      preLoaderRoute: typeof PanelDiasporaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/panel/centro': {
       id: '/panel/centro'
       path: '/panel/centro'
       fullPath: '/panel/centro'
       preLoaderRoute: typeof PanelCentroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/autoridad': {
+      id: '/panel/autoridad'
+      path: '/panel/autoridad'
+      fullPath: '/panel/autoridad'
+      preLoaderRoute: typeof PanelAutoridadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/panel/admin': {
@@ -266,7 +406,14 @@ const rootRouteChildren: RootRouteChildren = {
   VoluntariosRoute: VoluntariosRoute,
   CentroIdRoute: CentroIdRoute,
   PanelAdminRoute: PanelAdminRoute,
+  PanelAutoridadRoute: PanelAutoridadRoute,
   PanelCentroRoute: PanelCentroRoute,
+  PanelDiasporaRoute: PanelDiasporaRoute,
+  PanelDonadorRoute: PanelDonadorRoute,
+  PanelEmpresaRoute: PanelEmpresaRoute,
+  PanelOngRoute: PanelOngRoute,
+  PanelTransportistaRoute: PanelTransportistaRoute,
+  PanelVoluntarioRoute: PanelVoluntarioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

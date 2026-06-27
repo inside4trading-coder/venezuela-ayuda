@@ -1,4 +1,4 @@
-﻿import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { AuthButton } from "@/components/auth/AuthButton";
@@ -48,6 +48,7 @@ export function Navbar() {
           </span>
         </Link>
 
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-7">
           {LINKS.map((l) => {
             const active = isActive(l.to);
@@ -67,6 +68,7 @@ export function Navbar() {
           })}
         </nav>
 
+        {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <AuthButton />
           {panelPath && !isAdmin && (
@@ -104,6 +106,7 @@ export function Navbar() {
           </Link>
         </div>
 
+        {/* Mobile hamburger */}
         <button
           className="md:hidden p-2 text-[var(--color-text-main)]"
           onClick={() => setOpen((v) => !v)}
@@ -113,6 +116,7 @@ export function Navbar() {
         </button>
       </div>
 
+      {/* Mobile drawer */}
       {open && (
         <div className="md:hidden border-t border-hair border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 flex flex-col gap-2">
           {LINKS.map((l) => (
@@ -127,23 +131,51 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
-          <div className="flex gap-2 pt-2 border-t border-hair border-[var(--color-border)]">
-            <Link
-              to="/registrar-centro"
-              onClick={() => setOpen(false)}
-              className="flex-1 text-center text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)]"
-              style={{ borderWidth: "0.5px" }}
-            >
-              Registrar centro
-            </Link>
-            <Link
-              to="/impacto"
-              onClick={() => setOpen(false)}
-              className="flex-1 text-center text-[14px] px-3 py-2 rounded-md bg-[var(--color-critical)] text-white"
-            >
-              Quiero ayudar
-            </Link>
+
+          <div className="flex flex-col gap-2 pt-2 border-t border-hair border-[var(--color-border)]">
+            {/* Mi panel / Admin — solo si el usuario tiene rol asignado */}
+            {panelPath && !isAdmin && (
+              <Link
+                to={panelPath}
+                onClick={() => setOpen(false)}
+                className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] text-center"
+                style={{ borderWidth: "0.5px" }}
+              >
+                Mi panel
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/panel/admin"
+                onClick={() => setOpen(false)}
+                className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-center"
+                style={{ borderWidth: "0.5px" }}
+              >
+                Admin
+              </Link>
+            )}
+
+            <div className="flex gap-2">
+              {showRegisterCenter && (
+                <Link
+                  to="/registrar-centro"
+                  onClick={() => setOpen(false)}
+                  className="flex-1 text-center text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)]"
+                  style={{ borderWidth: "0.5px" }}
+                >
+                  Registrar centro
+                </Link>
+              )}
+              <Link
+                to="/impacto"
+                onClick={() => setOpen(false)}
+                className="flex-1 text-center text-[14px] px-3 py-2 rounded-md bg-[var(--color-critical)] text-white"
+              >
+                Quiero ayudar
+              </Link>
+            </div>
           </div>
+
           <div className="pt-2 border-t border-hair border-[var(--color-border)]">
             <AuthButton />
           </div>

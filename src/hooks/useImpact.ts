@@ -34,7 +34,7 @@ const EMPTY_METRICS: ImpactMetrics = {
     albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
     acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
     medico: { total: 0, metricaLabel: "atenciones / sem", metricaValor: 0 },
-    cocina: { total: 0, metricaLabel: "raciones / d\u00eda", metricaValor: 0 },
+    cocina: { total: 0, metricaLabel: "raciones / día", metricaValor: 0 },
     distribucion: { total: 0, metricaLabel: "entregas / sem", metricaValor: 0 },
   },
 };
@@ -59,11 +59,11 @@ export function useImpact() {
           .select("id, type, status, state, capacity_used")
           .or("status.is.null,status.neq.cerrado");
 
-        // Voluntarios activos
+        // Voluntarios: conteo desde profiles por rol
         const { count: voluntariosCount } = await supabase
-          .from("volunteers")
+          .from("profiles")
           .select("id", { count: "exact", head: true })
-          .eq("status", "active");
+          .in("role", ["voluntario", "voluntario_medico"]);
 
         // Todos los needs con nombre y nivel (sin límite)
         const { data: needsData } = await supabase
@@ -93,7 +93,7 @@ export function useImpact() {
           albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
           acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
           medico: { total: 0, metricaLabel: "atenciones / sem", metricaValor: 0 },
-          cocina: { total: 0, metricaLabel: "raciones / d\u00eda", metricaValor: 0 },
+          cocina: { total: 0, metricaLabel: "raciones / día", metricaValor: 0 },
           distribucion: { total: 0, metricaLabel: "entregas / sem", metricaValor: 0 },
         };
         for (const c of centersArr) {

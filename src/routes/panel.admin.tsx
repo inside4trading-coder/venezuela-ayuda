@@ -99,10 +99,10 @@ function AdminPanel() {
         .select("id, name, type, city, state")
         .not("verified_at", "is", null),
       supabase
-        .from("profiles")
-        .select("id, full_name, role, center_id")
-        .in("role", ["pending", "coordinador"])
-        .order("full_name", { ascending: true }),
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['coordinador', 'data_entry', 'admin'])
+        .order('full_name'),
     ]);
     if (c1.error) console.error(c1.error);
     if (c2.error) console.error(c2.error);
@@ -377,7 +377,7 @@ function AdminPanel() {
                       <option value="">Asignar a…</option>
                       {candidates.map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.full_name ?? "(sin nombre)"} {u.role === "coordinador" ? "· (ya coord.)" : ""}
+                          {u.full_name ?? "(sin nombre)"} ({u.role})
                         </option>
                       ))}
                     </select>

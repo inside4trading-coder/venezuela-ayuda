@@ -39,8 +39,14 @@ function mapRow(row: any): Center {
     estado = row.status as CenterStatus;
   }
 
-  // Mapear las necesidades
-  const necesita: Need[] = (row.needs ?? []).map((n: any) => {
+  // Mapear las necesidades. Defensive: PostgREST puede devolver array,
+  // object (one-to-one inferido) o null. Normalizamos a array.
+  const rawNeeds = Array.isArray(row.needs)
+    ? row.needs
+    : row.needs && typeof row.needs === "object"
+    ? [row.needs]
+    : [];
+  const necesita: Need[] = rawNeeds.map((n: any) => {
     let nivel: NeedLevel = "medio";
     if (n.nivel === "critico") {
       nivel = "critico";

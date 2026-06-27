@@ -23,6 +23,8 @@ begin
         or tc.constraint_name ilike '%nivel%'
         or tc.constraint_name ilike '%level%'
         or tc.constraint_name ilike '%priority%'
+        or tc.constraint_name ilike '%category%'
+        or tc.constraint_name ilike '%state%'
       )
   loop
     execute format('alter table public.%I drop constraint %I',

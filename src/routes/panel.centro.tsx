@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { InventoryItemsTable } from "@/components/centers/InventoryItemsTable";
 import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import {
   useCenterApplications,
@@ -53,12 +54,6 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "inactivo", label: "Cerrado temporalmente" },
 ];
 
-const INV_STATUS: Array<{ value: string; label: string }> = [
-  { value: "ok", label: "OK" },
-  { value: "bajo", label: "Bajo" },
-  { value: "critico", label: "Crítico" },
-];
-
 // Etiquetas contextuales de capacidad según tipo de centro
 const CAPACITY_LABELS: Record<string, { total: string; used: string }> = {
   albergue:     { total: "Capacidad familias",    used: "Familias actuales" },
@@ -83,7 +78,6 @@ function CenterPanel() {
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [loadingCenter, setLoadingCenter] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", quantity: "", unit: "unidades", status: "ok" });
 
   const centerId = profile?.center_id ?? null;
 
@@ -195,16 +189,16 @@ function CenterPanel() {
     }
   };
 
-  const addItem = async () => {
-    const qty = parseFloat(newItem.quantity);
+  const addItem = async (item: { name: string; quantity: number; unit: string; status: string }) => {
+    if (!center) return;
     const { data, error } = await supabase
       .from("inventory_items")
       .insert({
         center_id: center.id,
-        name: newItem.name.trim() || null,
-        quantity: isNaN(qty) ? 0 : qty,
-        unit: newItem.unit?.trim() || null,
-        status: newItem.status || null,
+        name: item.name || null,
+        quantity: item.quantity,
+        unit: item.unit || null,
+        status: item.status || null,
       })
       .select("id, center_id, name, category, quantity, unit, status")
       .single();
@@ -215,7 +209,6 @@ function CenterPanel() {
       return;
     }
     setInventory((xs) => [...xs, data as InventoryRow]);
-    setNewItem({ name: "", quantity: "", unit: "unidades", status: "ok" });
     toast.success("Ítem añadido");
   };
 
@@ -355,101 +348,12 @@ function CenterPanel() {
 
       <section className="space-y-4">
         <h2 className="font-display font-semibold text-[18px]">Inventario</h2>
-
-        <div className="rounded-lg border-hair border-[var(--color-border)] overflow-hidden">
-          <table className="w-full text-[14px]">
-            <thead className="text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
-              <tr className="text-left">
-                <th className="px-3 py-2 font-normal">Ítem</th>
-                <th className="px-3 py-2 font-normal w-[120px]">Cantidad</th>
-                <th className="px-3 py-2 font-normal w-[120px]">Unidad</th>
-                <th className="px-3 py-2 font-normal w-[140px]">Estado</th>
-                <th className="px-3 py-2 font-normal w-[80px]"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map((it, i) => (
-                <tr key={it.id} className={i % 2 === 0 ? "bg-[var(--color-surface-alt)]" : ""}>
-                  <td className="px-3 py-2">
-                    <input
-                      className="w-full bg-transparent outline-none"
-                      defaultValue={it.name}
-                      onBlur={(e) => e.target.value !== it.name && updateItem(it.id, { name: e.target.value })}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="number"
-                      className="w-full bg-transparent outline-none font-mono"
-                      defaultValue={it.quantity}
-                      onBlur={(e) => Number(e.target.value) !== it.quantity && updateItem(it.id, { quantity: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      className="w-full bg-transparent outline-none"
-                      defaultValue={it.unit}
-                      onBlur={(e) => e.target.value !== it.unit && updateItem(it.id, { unit: e.target.value })}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <select
-                      className="bg-transparent outline-none text-[13px]"
-                      value={it.status}
-                      onChange={(e) => updateItem(it.id, { status: e.target.value })}
-                    >
-                      {INV_STATUS.map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => deleteItem(it.id)}
-                      className="text-[12px] text-[var(--color-critical)] hover:underline"
-                    >
-                      Borrar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {inventory.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-[13px] text-[var(--color-text-muted)]">
-                    Sin ítems aún. Añade el primero abajo.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_140px_auto] gap-3 items-end">
-          <Field label="Nuevo ítem">
-            <TextInput placeholder="Agua potable" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
-          </Field>
-          <Field label="Cantidad">
-            <TextInput type="number" min="0" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} />
-          </Field>
-          <Field label="Unidad">
-            <TextInput value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })} />
-          </Field>
-          <Field label="Estado">
-            <Select value={newItem.status} onChange={(e) => setNewItem({ ...newItem, status: e.target.value })}>
-              {INV_STATUS.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </Select>
-          </Field>
-          <button
-            type="button"
-            onClick={addItem}
-            className="h-10 px-4 rounded-md bg-[var(--color-text-main)] text-[var(--color-bg)] font-display font-semibold text-[13px] disabled:opacity-50"
-          >
-            Añadir
-          </button>
-        </div>
+        <InventoryItemsTable
+          items={inventory}
+          onAdd={addItem}
+          onUpdate={updateItem}
+          onDelete={deleteItem}
+        />
       </section>
     </div>
   );

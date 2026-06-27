@@ -1,7 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import { Field, Select, TextInput } from "@/components/ui-vh/Field";
+import {
+  InventoryItemsTable,
+  type InventoryDraftItem,
+} from "@/components/centers/InventoryItemsTable";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import {
   CENTER_KINDS,
@@ -55,7 +59,6 @@ interface FormState {
   estado: string;
   necesita: string[];
   tiene: string[];
-  otras: string;
   necesitaVoluntarios: string[];
 }
 
@@ -82,7 +85,6 @@ const EMPTY: FormState = {
   estado: "",
   necesita: [],
   tiene: [],
-  otras: "",
   necesitaVoluntarios: [],
 };
 
@@ -91,6 +93,7 @@ function RegisterCenter() {
   const { profile, isAdmin, isDataEntry, isLoading: profLoading, refresh: refreshProfile } = useProfile();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [inventarioInicial, setInventarioInicial] = useState<InventoryDraftItem[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -204,7 +207,7 @@ function RegisterCenter() {
         else await refreshProfile();
       }
 
-      // Insertar necesidades
+      // Insertar necesidades (catálogo de checkboxes)
       const needsToInsert = form.necesita.map((nombre) => ({
         center_id: centerId,
         nombre,
@@ -212,21 +215,23 @@ function RegisterCenter() {
         cantidad_aprox: "",
       }));
 
-      // Agregar otras necesidades como texto libre
-      if (form.otras.trim()) {
-        needsToInsert.push({
-          center_id: centerId,
-          nombre: form.otras.trim(),
-          nivel: "medio" as const,
-          cantidad_aprox: "",
-        });
-      }
-
       if (needsToInsert.length > 0) {
         const { error: needsError } = await supabase
           .from("needs")
           .insert(needsToInsert);
         if (needsError) console.warn("Error insertando necesidades:", needsError);
+      }
+
+      // Carga inicial de inventario estructurado
+      if (inventarioInicial.length > 0) {
+        const inventoryRows = inventarioInicial.map(({ id: _drop, ...rest }) => ({
+          ...rest,
+          center_id: centerId,
+        }));
+        const { error: invError } = await supabase
+          .from("inventory_items")
+          .insert(inventoryRows);
+        if (invError) console.warn("Error insertando inventario inicial:", invError);
       }
 
       // Registrar en activity_log
@@ -241,6 +246,7 @@ function RegisterCenter() {
           : "Centro registrado — un admin lo revisará en menos de 2 horas",
       );
       setForm(EMPTY);
+      setInventarioInicial([]);
       setErrors({});
       if (isDataEntry) navigate({ to: "/panel/data-entry" });
       else if (!isAdmin) navigate({ to: "/panel/centro" });
@@ -482,9 +488,31 @@ function RegisterCenter() {
             selected={form.necesita}
             onToggle={(v) => toggleArr("necesita", v)}
           />
-          <Field label="Otras necesidades">
-            <TextArea value={form.otras} onChange={(e) => set("otras", e.target.value)} />
-          </Field>
+        </Section>
+
+        <Section title="Inventario inicial">
+          <p className="text-[13px] text-[var(--color-text-muted)] -mt-1 mb-3">
+            Carga lo que el centro ya tiene en stock (cantidad, unidad, estado).
+            Los data entry y el coordinador podrán editar esto desde su panel.
+          </p>
+          <InventoryItemsTable
+            items={inventarioInicial}
+            onAdd={(item) =>
+              setInventarioInicial((xs) => [
+                ...xs,
+                { ...item, id: crypto.randomUUID() },
+              ])
+            }
+            onUpdate={(id, patch) =>
+              setInventarioInicial((xs) =>
+                xs.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+              )
+            }
+            onDelete={(id) =>
+              setInventarioInicial((xs) => xs.filter((x) => x.id !== id))
+            }
+            emptyHint="Sin ítems aún. Es opcional — puedes cargar el inventario después."
+          />
         </Section>
 
         <Section title="Qué tienen en abundancia">

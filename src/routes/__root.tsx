@@ -82,17 +82,50 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Plataforma operativa de coordinación humanitaria tras el terremoto del 24 de junio de 2026 en Venezuela.",
       },
       { name: "author", content: "Venezuela Ayuda" },
-      { property: "og:title", content: "Venezuela Ayuda" },
+      { name: "theme-color", content: "#E11D2A" },
+      { name: "application-name", content: "Venezuela Ayuda" },
+      { name: "apple-mobile-web-app-title", content: "Venezuela Ayuda" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "mobile-web-app-capable", content: "yes" },
+
+      // Open Graph
+      { property: "og:title", content: "Venezuela Ayuda · Coordinación humanitaria en vivo" },
       {
         property: "og:description",
         content:
-          "47 centros activos coordinando ayuda en tiempo real. Encuentra dónde donar o cómo ayudar hoy.",
+          "Centros activos, necesidades en tiempo real y rutas de entrega. Encuentra dónde donar o cómo ayudar hoy.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:site_name", content: "Venezuela Ayuda" },
+      { property: "og:locale", content: "es_VE" },
+      { property: "og:image", content: "/og-image.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:alt", content: "Venezuela Ayuda — Coordinar la ayuda en tiempo real" },
+
+      // Twitter
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Venezuela Ayuda · Coordinación humanitaria en vivo" },
+      {
+        name: "twitter:description",
+        content:
+          "Centros activos, necesidades en tiempo real y rutas de entrega. Encuentra dónde donar o cómo ayudar hoy.",
+      },
+      { name: "twitter:image", content: "/og-image.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+
+      // Icons
+      { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "mask-icon", href: "/favicon.svg", color: "#E11D2A" },
+
+      // Fonts
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

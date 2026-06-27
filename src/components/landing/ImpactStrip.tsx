@@ -28,7 +28,7 @@ export function ImpactStrip() {
         <dl className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-px bg-[var(--color-border)] border-hair border-[var(--color-border)] rounded-lg overflow-hidden">
           {[
             { l: "Centros activos", v: metrics.centrosActivos },
-            { l: "Familias atendidas", v: metrics.familiasAtendidas.toLocaleString("es-VE") },
+            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE") },
             { l: "Voluntarios", v: metrics.voluntarios },
             { l: "Estados cubiertos", v: metrics.estados },
           ].map((m) => (

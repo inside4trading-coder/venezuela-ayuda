@@ -33,7 +33,7 @@ export function Hero() {
         <dl className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 border-t border-hair border-[var(--color-border)] pt-6">
           {[
             { l: "Centros activos", v: metrics.centrosActivos },
-            { l: "Familias atendidas", v: metrics.familiasAtendidas.toLocaleString("es-VE") },
+            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE") },
             { l: "Voluntarios", v: metrics.voluntarios },
             { l: "Estados cubiertos", v: metrics.estados },
           ].map((m) => (

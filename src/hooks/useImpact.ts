@@ -16,7 +16,7 @@ export interface ActivityEntry {
 
 export interface ImpactMetrics {
   centrosActivos: number;
-  familiasAtendidas: number;
+  necesidadesActivas: number;
   voluntarios: number;
   estados: number;
   porTipo: Record<
@@ -27,7 +27,7 @@ export interface ImpactMetrics {
 
 const EMPTY_METRICS: ImpactMetrics = {
   centrosActivos: 0,
-  familiasAtendidas: 0,
+  necesidadesActivas: 0,
   voluntarios: 0,
   estados: 0,
   porTipo: {
@@ -96,11 +96,6 @@ export function useImpact() {
           .order("created_at", { ascending: false })
           .limit(10);
 
-        const { count: donationsCount } = await supabase
-          .from("donations")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "delivered");
-
         if (!active) return;
 
         const centersArr = centers ?? [];
@@ -163,7 +158,7 @@ export function useImpact() {
 
         setMetrics({
           centrosActivos: centersArr.length,
-          familiasAtendidas: donationsCount ?? 0,
+          necesidadesActivas: needsData?.length ?? 0,
           voluntarios: voluntariosCount ?? 0,
           estados: estadosUnicos,
           porTipo,

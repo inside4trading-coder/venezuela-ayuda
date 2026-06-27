@@ -47,39 +47,32 @@ function VolunteersPage() {
     try {
       const blank = (s: string) => (s && s.trim() ? s.trim() : null);
 
-      // Degradación: si la migration del portal aún no se aplicó, algunas
-      // columnas (roles, availability, state, city, notes) no existirán.
-      // Intentamos full → básico para que el form siempre registre algo.
-      const fullPayload = {
+      // Schema real de `volunteers`: id, full_name, phone, state, city,
+      // user_id, status, center_id, skills[]. Disponibilidad y notas
+      // no tienen columna propia; las concatenamos en full_name como
+      // contexto si vienen, para no perderlas hasta que se aplique la
+      // migration del portal.
+      const extras: string[] = [];
+      if (form.disponibilidad.trim()) extras.push(`Disp: ${form.disponibilidad.trim()}`);
+      if (form.notas.trim()) extras.push(`Notas: ${form.notas.trim()}`);
+      const fullName = [blank(form.nombre), extras.join(" · ")]
+        .filter(Boolean)
+        .join(" — ") || null;
+
+      const payload = {
         user_id: user?.id ?? null,
-        name: blank(form.nombre),
+        full_name: fullName,
         phone: blank(form.telefono),
         state: blank(form.estado),
         city: blank(form.ciudad),
-        availability: blank(form.disponibilidad),
-        notes: blank(form.notas),
-        roles: form.roles,
-        status: "pending",
-      };
-      const basicPayload = {
-        user_id: user?.id ?? null,
-        name: blank(form.nombre),
-        phone: blank(form.telefono),
+        skills: form.roles,
         status: "pending",
       };
 
-      let { error } = await supabase.from("volunteers").insert(fullPayload);
-      if (error) {
-        console.warn("volunteer full insert failed, retry basic:", error.message);
-        const r2 = await supabase.from("volunteers").insert(basicPayload);
-        if (r2.error) throw r2.error;
-        toast.success(
-          "Registro recibido (datos básicos). El equipo te contactará al teléfono indicado.",
-        );
-      } else {
-        toast.success("Recibimos tu registro — te llamamos en menos de 24 horas");
-      }
+      const { error } = await supabase.from("volunteers").insert(payload);
+      if (error) throw error;
 
+      toast.success("Recibimos tu registro — te llamamos en menos de 24 horas");
       setForm({
         nombre: "",
         telefono: "",

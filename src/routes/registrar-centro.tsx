@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import {
   CENTER_KINDS,
   ESTADOS_VENEZUELA,
@@ -9,6 +10,7 @@ import {
   NEED_CATALOG,
   type CenterKind,
 } from "@/data/mock";
+import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -54,6 +56,7 @@ interface FormState {
   necesita: string[];
   tiene: string[];
   otras: string;
+  necesitaVoluntarios: string[];
 }
 
 const EMPTY: FormState = {
@@ -80,6 +83,7 @@ const EMPTY: FormState = {
   necesita: [],
   tiene: [],
   otras: "",
+  necesitaVoluntarios: [],
 };
 
 function RegisterCenter() {
@@ -177,6 +181,7 @@ function RegisterCenter() {
           phone: blank(form.telefono),
           capacity,
           capacity_used,
+          needed_roles: form.necesitaVoluntarios,
           verified_at: null,
           created_by: user.id,
         })
@@ -490,6 +495,26 @@ function RegisterCenter() {
           />
         </Section>
 
+        <Section title="Voluntarios que necesitas">
+          <p className="text-[12px] text-[var(--color-text-muted)] -mt-1">
+            Marca los perfiles que tu centro necesita ahora. Las personas inscritas
+            como voluntarios verán tu centro en su panel y podrán postularse.
+          </p>
+          <CheckGrid
+            options={VOLUNTEER_ROLES}
+            selected={form.necesitaVoluntarios}
+            onToggle={(v) =>
+              setForm((f) => ({
+                ...f,
+                necesitaVoluntarios: f.necesitaVoluntarios.includes(v)
+                  ? f.necesitaVoluntarios.filter((x) => x !== v)
+                  : [...f.necesitaVoluntarios, v],
+              }))
+            }
+            cols={2}
+          />
+        </Section>
+
         <div>
           <button
             type="submit"
@@ -520,31 +545,5 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="h-px bg-[var(--color-border)]" />
       <div className="space-y-4 pt-2">{children}</div>
     </section>
-  );
-}
-
-function CheckGrid({
-  options,
-  selected,
-  onToggle,
-}: {
-  options: readonly string[];
-  selected: string[];
-  onToggle: (v: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-[13px]">
-      {options.map((o) => (
-        <label key={o} className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={selected.includes(o)}
-            onChange={() => onToggle(o)}
-            className="accent-[var(--color-operational)]"
-          />
-          <span>{o}</span>
-        </label>
-      ))}
-    </div>
   );
 }

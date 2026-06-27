@@ -86,6 +86,7 @@ function mapRow(row: any): Center {
     actualizadoHaceMin: 0,
     lat: row.lat,
     lng: row.lng,
+    needed_roles: Array.isArray(row.needed_roles) ? row.needed_roles : [],
   };
 
   switch (kind) {
@@ -152,7 +153,7 @@ async function fetchAll(): Promise<Center[]> {
       // PostgREST falla; en ese caso reintentamos sin el embed.
       let { data, error } = await supabase.from("centers").select(`
           id, name, type, status, address, city, state,
-          lat, lng, phone, capacity, capacity_used, verified_at,
+          lat, lng, phone, capacity, capacity_used, verified_at, needed_roles,
           needs ( id, nombre, nivel, cantidad_aprox )
         `);
 
@@ -160,7 +161,7 @@ async function fetchAll(): Promise<Center[]> {
         console.warn("centers select with needs embed failed:", error.message);
         const retry = await supabase.from("centers").select(`
           id, name, type, status, address, city, state,
-          lat, lng, phone, capacity, capacity_used, verified_at
+          lat, lng, phone, capacity, capacity_used, verified_at, needed_roles
         `);
         if (retry.error) throw retry.error;
         data = retry.data;
@@ -279,7 +280,7 @@ export function useCenter(id: string | undefined) {
           .from("centers")
           .select(`
             id, name, type, status, address, city, state,
-            lat, lng, phone, capacity, capacity_used, verified_at,
+            lat, lng, phone, capacity, capacity_used, verified_at, needed_roles,
             needs ( id, nombre, nivel, cantidad_aprox )
           `)
           .eq("id", id)

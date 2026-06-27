@@ -164,6 +164,33 @@ function CenterDetail() {
             <p className="text-[14px] font-mono">{center.horario}</p>
           </section>
 
+          {(center as any).needed_roles && (center as any).needed_roles.length > 0 && (
+            <section>
+              <h2 className="font-display font-semibold text-[17px] mb-3">
+                Voluntarios que necesita este centro
+              </h2>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {((center as any).needed_roles as string[]).map((r) => (
+                  <span
+                    key={r}
+                    className="text-[12px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair border-[var(--color-operational)] text-[var(--color-operational)]"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+              <Link
+                to="/panel/voluntario"
+                className="inline-block h-10 px-4 rounded-md bg-[var(--color-critical)] text-white text-[13px] font-display font-semibold leading-[40px]"
+              >
+                Postularme aquí
+              </Link>
+              <p className="mt-2 text-[12px] text-[var(--color-text-muted)]">
+                Necesitas una cuenta para postularte. Te llevamos a tu panel.
+              </p>
+            </section>
+          )}
+
           <section>
             <h2 className="font-display font-semibold text-[17px] mb-3">Coordinador</h2>
             <table className="text-[14px]">

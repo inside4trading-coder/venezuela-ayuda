@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
+import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/voluntarios")({
   head: () => ({
@@ -18,16 +21,8 @@ export const Route = createFileRoute("/voluntarios")({
   component: VolunteersPage,
 });
 
-const ROLES = [
-  "Logística en centro",
-  "Conductor / vehículo propio",
-  "Médico o enfermero",
-  "Cocina y reparto de alimentos",
-  "Atención a niños",
-  "Comunicación / redes",
-];
-
 function VolunteersPage() {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     nombre: "",
     telefono: "",
@@ -38,6 +33,7 @@ function VolunteersPage() {
     roles: [] as string[],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
 
   const toggleRole = (r: string) =>
     setForm((f) => ({
@@ -51,6 +47,7 @@ function VolunteersPage() {
     try {
       const blank = (s: string) => (s && s.trim() ? s.trim() : null);
       const { error } = await supabase.from("volunteers").insert({
+        user_id: user?.id ?? null,
         name: blank(form.nombre),
         phone: blank(form.telefono),
         state: blank(form.estado),
@@ -73,9 +70,13 @@ function VolunteersPage() {
         notas: "",
         roles: [],
       });
+      setDone(true);
     } catch (err: any) {
       console.error("Error registrando voluntario:", err);
-      toast.error("Hubo un problema al registrarte. Intenta de nuevo.");
+      const detail = err?.message || err?.details || "";
+      toast.error(
+        detail ? `No se pudo registrar: ${detail}` : "Hubo un problema al registrarte.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -92,25 +93,40 @@ function VolunteersPage() {
         </p>
       </header>
 
+      {done && user && (
+        <div
+          className="mb-6 rounded-lg border-hair border-[var(--color-operational)] bg-[var(--color-surface)] p-4 text-[14px]"
+          style={{ borderLeftWidth: "3px" }}
+        >
+          <p className="mb-2 font-medium">
+            Como ya tienes cuenta, puedes ver los centros que coinciden con tu perfil
+            y postularte directamente.
+          </p>
+          <Link
+            to="/panel/voluntario"
+            className="inline-block h-9 px-4 rounded-md bg-[var(--color-critical)] text-white text-[13px] font-display font-semibold leading-[36px]"
+          >
+            Ver centros que te necesitan
+          </Link>
+        </div>
+      )}
+
       <form onSubmit={onSubmit} className="space-y-6">
-        <Field label="Nombre completo" required>
+        <Field label="Nombre completo">
           <TextInput
-            required
             value={form.nombre}
             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
           />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Teléfono" required>
+          <Field label="Teléfono">
             <TextInput
-              required
               value={form.telefono}
               onChange={(e) => setForm({ ...form, telefono: e.target.value })}
             />
           </Field>
-          <Field label="Estado" required>
+          <Field label="Estado">
             <Select
-              required
               value={form.estado}
               onChange={(e) => setForm({ ...form, estado: e.target.value })}
             >
@@ -123,16 +139,14 @@ function VolunteersPage() {
             </Select>
           </Field>
         </div>
-        <Field label="Ciudad o municipio" required>
+        <Field label="Ciudad o municipio">
           <TextInput
-            required
             value={form.ciudad}
             onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
           />
         </Field>
-        <Field label="Disponibilidad" required>
+        <Field label="Disponibilidad">
           <Select
-            required
             value={form.disponibilidad}
             onChange={(e) => setForm({ ...form, disponibilidad: e.target.value })}
           >
@@ -146,19 +160,7 @@ function VolunteersPage() {
 
         <div>
           <div className="mb-2 text-[13px]">¿En qué puedes ayudar?</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[13px]">
-            {ROLES.map((r) => (
-              <label key={r} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.roles.includes(r)}
-                  onChange={() => toggleRole(r)}
-                  className="accent-[var(--color-operational)]"
-                />
-                <span>{r}</span>
-              </label>
-            ))}
-          </div>
+          <CheckGrid options={VOLUNTEER_ROLES} selected={form.roles} onToggle={toggleRole} cols={2} />
         </div>
 
         <Field label="Notas (opcional)">
@@ -176,6 +178,15 @@ function VolunteersPage() {
         >
           {submitting ? "Registrando…" : "Quiero ayudar"}
         </button>
+
+        {!user && (
+          <p className="text-center text-[12px] text-[var(--color-text-muted)]">
+            <Link to="/" className="underline">
+              Entra con Google
+            </Link>{" "}
+            para postularte a un centro específico y seguir el estado de tu solicitud.
+          </p>
+        )}
       </form>
     </div>
   );

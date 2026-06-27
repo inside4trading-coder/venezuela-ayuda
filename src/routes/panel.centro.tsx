@@ -5,7 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
+import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
+import {
+  useCenterApplications,
+  updateApplicationStatus,
+  type ApplicationStatus,
+} from "@/hooks/useVolunteerApplications";
 
 export const Route = createFileRoute("/panel/centro")({
   head: () => ({
@@ -25,6 +32,7 @@ interface CenterRow {
   phone: string | null;
   capacity: number | null;
   capacity_used: number | null;
+  needed_roles: string[] | null;
   verified_at: string | null;
 }
 
@@ -90,7 +98,7 @@ function CenterPanel() {
       const { data: c, error: ce } = await supabase
         .from("centers")
         .select(
-          "id, name, type, status, city, state, address, phone, capacity, capacity_used, verified_at"
+          "id, name, type, status, city, state, address, phone, capacity, capacity_used, needed_roles, verified_at"
         )
         .eq("id", centerId)
         .single();
@@ -175,6 +183,7 @@ function CenterPanel() {
         capacity_used: center.capacity_used,
         phone: center.phone,
         address: center.address,
+        needed_roles: center.needed_roles ?? [],
       })
       .eq("id", center.id);
     setSaving(false);
@@ -297,6 +306,31 @@ function CenterPanel() {
         </div>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="font-display font-semibold text-[18px]">Voluntarios que necesitas</h2>
+        <p className="text-[12px] text-[var(--color-text-muted)] -mt-1">
+          Los perfiles marcados verán este centro como sugerencia y podrán postularse.
+        </p>
+        <CheckGrid
+          options={VOLUNTEER_ROLES}
+          selected={center.needed_roles ?? []}
+          onToggle={(v) =>
+            setCenter({
+              ...center,
+              needed_roles: (center.needed_roles ?? []).includes(v)
+                ? (center.needed_roles ?? []).filter((x) => x !== v)
+                : [...(center.needed_roles ?? []), v],
+            })
+          }
+          cols={2}
+        />
+        <p className="text-[11px] text-[var(--color-text-muted)]">
+          Recuerda pulsar "Guardar cambios" arriba para aplicar los nuevos roles.
+        </p>
+      </section>
+
+      <ApplicantsSection centerId={center.id} />
+
       <section className="space-y-4">
         <h2 className="font-display font-semibold text-[18px]">Inventario</h2>
 
@@ -401,4 +435,122 @@ function CenterPanel() {
 
 function Gate({ children }: { children: React.ReactNode }) {
   return <div className="max-w-[520px] mx-auto px-4 py-16 text-center">{children}</div>;
+}
+
+function ApplicantsSection({ centerId }: { centerId: string }) {
+  const { items, loading, reload } = useCenterApplications(centerId);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const updateStatus = async (id: string, status: ApplicationStatus) => {
+    setBusy(id);
+    const { error } = await updateApplicationStatus(id, status);
+    setBusy(null);
+    if (error) {
+      toast.error(`No se pudo actualizar: ${error}`);
+      return;
+    }
+    toast.success(status === "aceptada" ? "Postulación aceptada" : "Postulación rechazada");
+    reload();
+  };
+
+  return (
+    <section className="space-y-3">
+      <h2 className="font-display font-semibold text-[18px]">
+        Voluntarios postulados ({items.length})
+      </h2>
+      {loading ? (
+        <p className="text-[13px] text-[var(--color-text-muted)]">Cargando…</p>
+      ) : items.length === 0 ? (
+        <div className="rounded-lg border-hair border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-muted)]">
+          Sin postulaciones aún. Cuando declares los roles que necesitas, los voluntarios podrán inscribirse desde su panel.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((app) => (
+            <article
+              key={app.id}
+              className="rounded-lg border-hair border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+              style={{
+                borderLeftWidth: "3px",
+                borderLeftColor:
+                  app.status === "aceptada"
+                    ? "var(--color-resolved)"
+                    : app.status === "rechazada"
+                    ? "var(--color-text-muted)"
+                    : "var(--color-caution)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <div className="font-display font-semibold text-[15px]">
+                    {app.applicant_name ?? "(sin nombre)"}
+                  </div>
+                  <div className="text-[12px] text-[var(--color-text-muted)] mt-0.5">
+                    {app.volunteer?.phone ?? "Sin teléfono"} ·{" "}
+                    {new Date(app.created_at).toLocaleDateString("es-VE")}
+                  </div>
+                  {app.volunteer?.roles && app.volunteer.roles.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {app.volunteer.roles.map((r) => (
+                        <span
+                          key={r}
+                          className="text-[11px] uppercase tracking-label px-1.5 py-0.5 rounded-sm border-hair border-[var(--color-border)]"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {app.message && (
+                    <p className="mt-2 text-[13px] whitespace-pre-wrap">{app.message}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusChip status={app.status} />
+                  {app.status === "pendiente" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(app.id, "aceptada")}
+                        disabled={busy === app.id}
+                        className="h-9 px-3 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold disabled:opacity-50"
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(app.id, "rechazada")}
+                        disabled={busy === app.id}
+                        className="h-9 px-3 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-[13px] disabled:opacity-50"
+                        style={{ borderWidth: "0.5px" }}
+                      >
+                        Rechazar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function StatusChip({ status }: { status: ApplicationStatus }) {
+  const color =
+    status === "aceptada"
+      ? "var(--color-resolved)"
+      : status === "rechazada"
+      ? "var(--color-text-muted)"
+      : "var(--color-caution)";
+  return (
+    <span
+      className="text-[11px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair"
+      style={{ color, borderColor: color }}
+    >
+      {status}
+    </span>
+  );
 }

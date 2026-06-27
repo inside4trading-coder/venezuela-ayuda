@@ -2,8 +2,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import type { Profile, ProfileRole } from "@/hooks/useProfile";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
+import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 
 interface Props {
   profile: Profile;
@@ -111,13 +113,26 @@ export function ProfileFields({ profile, onSaved }: Props) {
         )}
 
         {(profile.role === "voluntario" || profile.role === "voluntario_medico") && (
-          <Field label="Habilidades (separadas por coma)">
-            <TextInput
-              value={(form.skills ?? []).join(", ")}
-              onChange={(e) => set("skills", parseList(e.target.value))}
-              placeholder="primeros auxilios, logística, traducción…"
-            />
-          </Field>
+          <>
+            <div className="sm:col-span-2">
+              <div className="block mb-1.5 text-[13px]">Tipos de ayuda que puedes dar</div>
+              <CheckGrid
+                options={VOLUNTEER_ROLES}
+                selected={form.skills ?? []}
+                onToggle={(v) => {
+                  const cur = form.skills ?? [];
+                  set(
+                    "skills",
+                    cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
+                  );
+                }}
+                cols={2}
+              />
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                Los centros que necesiten estos roles verán tu perfil sugerido.
+              </p>
+            </div>
+          </>
         )}
 
         {(profile.role === "voluntario" || profile.role === "voluntario_medico" || profile.role === "transportista") && (

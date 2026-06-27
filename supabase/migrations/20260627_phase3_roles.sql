@@ -51,16 +51,22 @@ create trigger profiles_updated_at
   for each row execute function public.set_updated_at();
 
 -- ----------------------------------------------------------------
--- 3. Helpers SQL (usan p.id porque esa es la PK existente)
+-- 3. Helpers SQL
 -- ----------------------------------------------------------------
+-- IMPORTANTE: is_admin() NO consulta profiles. Si lo hiciera, la
+-- policy "profiles_select_self_or_admin" llamaría a is_admin() que
+-- haría SELECT a profiles que vuelve a evaluar la policy → 42P17
+-- (infinite_recursion). Consultamos admin_emails ∞ auth.users.
 create or replace function public.is_admin()
 returns boolean
 language sql stable security definer
 set search_path = public
 as $$
   select exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'admin'
+    select 1
+    from auth.users u
+    join public.admin_emails a on a.email = u.email
+    where u.id = auth.uid()
   );
 $$;
 
@@ -80,10 +86,17 @@ $$;
 -- ----------------------------------------------------------------
 -- 4. Policies de admin_emails y profiles
 -- ----------------------------------------------------------------
+-- admin_emails: SIN policy de SELECT. RLS está enabled pero ninguna
+-- policy permite leer desde el cliente → la única vía es is_admin()
+-- (SECURITY DEFINER, ejecuta como postgres → bypasea RLS).
+-- Si añadimos una policy que use is_admin() aquí, se recursiva.
 drop policy if exists "admin_emails_select_admin" on public.admin_emails;
-create policy "admin_emails_select_admin"
-  on public.admin_emails for select
-  using (public.is_admin());
+
+-- Limpieza: drop policies preexistentes en español (Fase 2) que
+-- llamaban directamente a profiles desde profiles → recursión.
+drop policy if exists "Admin lee todos los perfiles"       on public.profiles;
+drop policy if exists "Usuario lee su propio perfil"       on public.profiles;
+drop policy if exists "Usuario actualiza su propio perfil" on public.profiles;
 
 drop policy if exists "profiles_select_self_or_admin" on public.profiles;
 create policy "profiles_select_self_or_admin"

@@ -33,7 +33,7 @@ const EMPTY_METRICS: ImpactMetrics = {
     albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
     acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
     medico: { total: 0, metricaLabel: "atenciones / sem", metricaValor: 0 },
-    cocina: { total: 0, metricaLabel: "raciones / día", metricaValor: 0 },
+    cocina: { total: 0, metricaLabel: "raciones / d\u00eda", metricaValor: 0 },
     distribucion: { total: 0, metricaLabel: "entregas / sem", metricaValor: 0 },
   },
 };
@@ -68,10 +68,11 @@ export function useImpact() {
           .select("nombre")
           .not("nombre", "is", null);
 
-        // Actividad reciente desde activity_log
+        // Actividad reciente — columnas reales: center_id, message, created_at
+        // Join con centers para obtener el nombre
         const { data: activityData } = await supabase
           .from("activity_log")
-          .select("center_name, action, created_at")
+          .select("center_id, message, created_at, centers(name)")
           .order("created_at", { ascending: false })
           .limit(10);
 
@@ -85,21 +86,19 @@ export function useImpact() {
 
         const centersArr = centers ?? [];
 
-        // Calcular métricas por tipo
-        const porTipo = { ...EMPTY_METRICS.porTipo };
-        const kindLabels: Record<CenterKind, { label: string }> = {
-          albergue: { label: "familias alojadas" },
-          acopio: { label: "items movidos / sem" },
-          medico: { label: "atenciones / sem" },
-          cocina: { label: "raciones / día" },
-          distribucion: { label: "entregas / sem" },
+        // Calcular m\u00e9tricas por tipo
+        const porTipo: ImpactMetrics["porTipo"] = {
+          albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
+          acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
+          medico: { total: 0, metricaLabel: "atenciones / sem", metricaValor: 0 },
+          cocina: { total: 0, metricaLabel: "raciones / d\u00eda", metricaValor: 0 },
+          distribucion: { total: 0, metricaLabel: "entregas / sem", metricaValor: 0 },
         };
         for (const c of centersArr) {
           const k = c.type as CenterKind;
           if (!porTipo[k]) continue;
           porTipo[k].total += 1;
           porTipo[k].metricaValor += c.capacity_used ?? 0;
-          porTipo[k].metricaLabel = kindLabels[k]?.label ?? "";
         }
 
         // Top demand: agrupar por nombre y contar
@@ -114,11 +113,11 @@ export function useImpact() {
           .sort((a, b) => b.total - a.total)
           .slice(0, 8);
 
-        // Actividad reciente
+        // Actividad reciente con nombre del centro via join
         const now = Date.now();
-        const activity: ActivityEntry[] = (activityData ?? []).map((a) => ({
-          centro: a.center_name ?? "Centro",
-          accion: a.action ?? "",
+        const activity: ActivityEntry[] = (activityData ?? []).map((a: any) => ({
+          centro: a.centers?.name ?? "Centro",
+          accion: a.message ?? "",
           haceMin: Math.round(
             (now - new Date(a.created_at).getTime()) / 60000,
           ),

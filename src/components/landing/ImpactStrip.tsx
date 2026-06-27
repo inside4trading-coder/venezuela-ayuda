@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useImpact } from "@/hooks/useImpact";
+import { useImpactContext } from "@/context/ImpactContext";
 
 export function ImpactStrip() {
-  const { metrics, topDemand } = useImpact();
+  const { metrics, topDemand } = useImpactContext();
 
   return (
     <section className="border-b border-hair border-[var(--color-border)]">

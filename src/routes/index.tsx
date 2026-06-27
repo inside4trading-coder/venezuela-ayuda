@@ -4,6 +4,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { ActorBlock } from "@/components/landing/ActorBlock";
 import { KindStrip } from "@/components/landing/KindStrip";
 import { ImpactStrip } from "@/components/landing/ImpactStrip";
+import { ImpactProvider } from "@/context/ImpactContext";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +28,8 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <>
+    // ImpactProvider asegura un solo fetch compartido entre Hero e ImpactStrip
+    <ImpactProvider>
       <Hero />
       <HowItWorks />
 
@@ -117,6 +119,6 @@ function Landing() {
           </div>
         </div>
       </section>
-    </>
+    </ImpactProvider>
   );
 }

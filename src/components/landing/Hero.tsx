@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useImpact } from "@/hooks/useImpact";
+import { useImpactContext } from "@/context/ImpactContext";
 
 export function Hero() {
-  const { metrics } = useImpact();
+  const { metrics } = useImpactContext();
   return (
     <section className="border-b border-hair border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

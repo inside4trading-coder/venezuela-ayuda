@@ -11,6 +11,7 @@ export type ProfileRole =
   | "voluntario_medico"
   | "transportista"
   | "coordinador"
+  | "data_entry"
   | "autoridad"
   | "observador"
   | "admin";
@@ -41,7 +42,7 @@ export interface Profile {
 const SELECT_COLS =
   "id, role, center_id, full_name, phone, state, city, organization, avatar_url, company_name, tax_id, country, vehicle_type, vehicle_capacity_kg, license_plate, skills, zones, verified_at, verification_note, bio";
 
-const REQUIRES_VERIFICATION: ProfileRole[] = ["voluntario_medico", "autoridad"];
+const REQUIRES_VERIFICATION: ProfileRole[] = ["voluntario_medico", "autoridad", "data_entry"];
 
 export function useProfile() {
   const { user, isLoading: authLoading } = useAuth();
@@ -92,6 +93,7 @@ export function useProfile() {
 
   const isAdmin = profile?.role === "admin";
   const isCoordinator = profile?.role === "coordinador";
+  const isDataEntry = profile?.role === "data_entry";
   const isPending = profile?.role === "pending";
   const requiresVerification = profile
     ? REQUIRES_VERIFICATION.includes(profile.role)
@@ -105,6 +107,7 @@ export function useProfile() {
     profile,
     isAdmin,
     isCoordinator,
+    isDataEntry,
     isPending,
     requiresVerification,
     isVerified,
@@ -124,6 +127,7 @@ export const ROLE_PANEL_PATH: Record<ProfileRole, string> = {
   voluntario_medico: "/panel/voluntario",
   transportista: "/panel/transportista",
   coordinador: "/panel/centro",
+  data_entry: "/panel/data-entry",
   autoridad: "/panel/autoridad",
   observador: "/panel/ong",
   admin: "/panel/admin",
@@ -138,6 +142,7 @@ export const ROLE_LABEL: Record<ProfileRole, string> = {
   voluntario_medico: "Voluntario médico",
   transportista: "Transportista",
   coordinador: "Coordinador de centro",
+  data_entry: "Carga de datos",
   autoridad: "Autoridad",
   observador: "ONG / Observador",
   admin: "Administrador",

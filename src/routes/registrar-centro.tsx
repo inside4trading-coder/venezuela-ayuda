@@ -84,7 +84,7 @@ const EMPTY: FormState = {
 
 function RegisterCenter() {
   const { user, isLoading: authLoading } = useAuth();
-  const { profile, isAdmin, isLoading: profLoading, refresh: refreshProfile } = useProfile();
+  const { profile, isAdmin, isDataEntry, isLoading: profLoading, refresh: refreshProfile } = useProfile();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -187,9 +187,10 @@ function RegisterCenter() {
 
       const centerId = centerData.id;
 
-      // Si el usuario no es admin, lo vinculamos como coordinador de este centro.
-      // El admin puede crear centros sin auto-asignarse.
-      if (!isAdmin) {
+      // Vínculo automático como coordinador SOLO si el rol del usuario es
+      // self-service tradicional (no admin, no data_entry). Admin y data_entry
+      // cargan centros que se asignan a coordinadores reales después.
+      if (!isAdmin && !isDataEntry) {
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ role: "coordinador", center_id: centerId })
@@ -229,10 +230,15 @@ function RegisterCenter() {
         message: `Centro registrado: ${form.nombre}`,
       });
 
-      toast.success("Centro registrado — un admin lo revisará en menos de 2 horas");
+      toast.success(
+        isDataEntry
+          ? "Centro cargado — quedó pendiente de verificación y asignación de coordinador"
+          : "Centro registrado — un admin lo revisará en menos de 2 horas",
+      );
       setForm(EMPTY);
       setErrors({});
-      if (!isAdmin) navigate({ to: "/panel/centro" });
+      if (isDataEntry) navigate({ to: "/panel/data-entry" });
+      else if (!isAdmin) navigate({ to: "/panel/centro" });
     } catch (err: any) {
       console.error("Error registrando centro:", err);
       const detail = err?.message || err?.error_description || err?.details || "";

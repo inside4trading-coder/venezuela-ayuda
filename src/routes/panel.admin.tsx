@@ -35,18 +35,48 @@ interface PendingProfile {
   created_at: string;
 }
 
+interface OrphanCenter {
+  id: string;
+  name: string | null;
+  type: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+interface CandidateProfile {
+  id: string;
+  full_name: string | null;
+  role: ProfileRole;
+  center_id: string | null;
+}
+
 function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: profLoading } = useProfile();
   const [pendingCenters, setPendingCenters] = useState<PendingCenter[]>([]);
   const [verifiedCenters, setVerifiedCenters] = useState<PendingCenter[]>([]);
   const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
+  const [orphanCenters, setOrphanCenters] = useState<OrphanCenter[]>([]);
+  const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
+  const [assignSelection, setAssignSelection] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [c1, c2, p] = await Promise.all([
+    // Centros con coordinador asignado (cualquier profile con center_id)
+    const { data: assignedRows } = await supabase
+      .from("profiles")
+      .select("center_id")
+      .eq("role", "coordinador")
+      .not("center_id", "is", null);
+    const assignedIds = new Set(
+      ((assignedRows as Array<{ center_id: string | null }>) ?? [])
+        .map((r) => r.center_id)
+        .filter(Boolean) as string[],
+    );
+
+    const [c1, c2, p, allCenters, cands] = await Promise.all([
       supabase
         .from("centers")
         .select("id, name, type, city, state, address, phone, created_at, created_by, verified_at")
@@ -61,9 +91,18 @@ function AdminPanel() {
       supabase
         .from("profiles")
         .select("id, role, full_name, organization, city, state, bio, created_at")
-        .in("role", ["voluntario_medico", "autoridad"])
+        .in("role", ["voluntario_medico", "autoridad", "data_entry"])
         .is("verified_at", null)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("centers")
+        .select("id, name, type, city, state")
+        .not("verified_at", "is", null),
+      supabase
+        .from("profiles")
+        .select("id, full_name, role, center_id")
+        .in("role", ["pending", "coordinador"])
+        .order("full_name", { ascending: true }),
     ]);
     if (c1.error) console.error(c1.error);
     if (c2.error) console.error(c2.error);
@@ -71,6 +110,11 @@ function AdminPanel() {
     setPendingCenters((c1.data as PendingCenter[]) ?? []);
     setVerifiedCenters((c2.data as PendingCenter[]) ?? []);
     setPendingProfiles((p.data as PendingProfile[]) ?? []);
+    const orphans = ((allCenters.data as OrphanCenter[]) ?? []).filter(
+      (c) => !assignedIds.has(c.id),
+    );
+    setOrphanCenters(orphans);
+    setCandidates((cands.data as CandidateProfile[]) ?? []);
     setLoading(false);
   };
 
@@ -134,6 +178,24 @@ function AdminPanel() {
     setBusyId(null);
     if (error) { toast.error("No se pudo verificar"); return; }
     toast.success("Perfil verificado");
+    load();
+  };
+
+  const assignCoordinator = async (centerId: string) => {
+    const userId = assignSelection[centerId];
+    if (!userId) {
+      toast.error("Selecciona un usuario antes de asignar");
+      return;
+    }
+    setBusyId(centerId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: "coordinador", center_id: centerId })
+      .eq("id", userId);
+    setBusyId(null);
+    if (error) { toast.error("No se pudo asignar"); console.error(error); return; }
+    toast.success("Coordinador asignado");
+    setAssignSelection((s) => { const next = { ...s }; delete next[centerId]; return next; });
     load();
   };
 
@@ -265,6 +327,67 @@ function AdminPanel() {
                       style={{ borderWidth: "0.5px" }}
                     >
                       Rechazar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display font-semibold text-[18px]">
+          Centros sin coordinador ({orphanCenters.length})
+        </h2>
+        <p className="text-[12px] text-[var(--color-text-muted)]">
+          Centros verificados que aún no tienen un coordinador asignado (típicamente cargados por data entry).
+        </p>
+        {orphanCenters.length === 0 ? (
+          <div className="rounded-lg border-hair border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-muted)]">
+            Todos los centros verificados tienen coordinador.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {orphanCenters.map((c) => (
+              <article
+                key={c.id}
+                className="rounded-lg border-hair border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <Link
+                      to="/centro/$id"
+                      params={{ id: c.id }}
+                      className="font-display font-semibold text-[15px] hover:underline"
+                    >
+                      {c.name ?? "(sin nombre)"}
+                    </Link>
+                    <div className="text-[13px] text-[var(--color-text-muted)] mt-0.5">
+                      {c.type ?? "—"} · {[c.city, c.state].filter(Boolean).join(", ") || "—"}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0 items-center">
+                    <select
+                      className="text-[13px] bg-[var(--color-surface)] border-hair border-[var(--color-border)] px-2 py-2 rounded-md"
+                      value={assignSelection[c.id] ?? ""}
+                      onChange={(e) => setAssignSelection((s) => ({ ...s, [c.id]: e.target.value }))}
+                      style={{ borderWidth: "0.5px" }}
+                    >
+                      <option value="">Asignar a…</option>
+                      {candidates.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.full_name ?? "(sin nombre)"} {u.role === "coordinador" ? "· (ya coord.)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => assignCoordinator(c.id)}
+                      disabled={busyId === c.id}
+                      className="h-9 px-4 rounded-md bg-[var(--color-operational)] text-white text-[13px] font-display font-semibold disabled:opacity-50"
+                    >
+                      Asignar
                     </button>
                   </div>
                 </div>

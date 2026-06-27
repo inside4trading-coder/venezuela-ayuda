@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Building2,
+  ClipboardList,
   Globe2,
   HeartHandshake,
   Package,
@@ -79,6 +80,13 @@ const ROLES: Array<{
     desc: "Gestiono un albergue, acopio, punto médico, cocina o distribución.",
     icon: Users,
   },
+  {
+    id: "data_entry",
+    title: "Cargo datos en la plataforma",
+    desc: "Registro centros y datos en lote; un admin asigna coordinadores luego.",
+    icon: ClipboardList,
+    needsVerification: true,
+  },
 ];
 
 function Onboarding() {
@@ -132,10 +140,10 @@ function Onboarding() {
       if (error) throw error;
       await refresh();
       const role = selected as ProfileRole;
-      const needsVerification = role === "voluntario_medico";
+      const needsVerification = role === "voluntario_medico" || role === "data_entry";
       toast.success(
         needsVerification
-          ? "Rol guardado — un admin revisará tus credenciales"
+          ? "Rol guardado — un admin revisará tu cuenta"
           : "Rol guardado",
       );
       if (role === "coordinador") {

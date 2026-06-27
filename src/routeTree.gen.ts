@@ -23,6 +23,7 @@ import { Route as PanelOngRouteImport } from './routes/panel.ong'
 import { Route as PanelEmpresaRouteImport } from './routes/panel.empresa'
 import { Route as PanelDonadorRouteImport } from './routes/panel.donador'
 import { Route as PanelDiasporaRouteImport } from './routes/panel.diaspora'
+import { Route as PanelDataEntryRouteImport } from './routes/panel.data-entry'
 import { Route as PanelCentroRouteImport } from './routes/panel.centro'
 import { Route as PanelAutoridadRouteImport } from './routes/panel.autoridad'
 import { Route as PanelAdminRouteImport } from './routes/panel.admin'
@@ -98,6 +99,11 @@ const PanelDiasporaRoute = PanelDiasporaRouteImport.update({
   path: '/panel/diaspora',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelDataEntryRoute = PanelDataEntryRouteImport.update({
+  id: '/panel/data-entry',
+  path: '/panel/data-entry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PanelCentroRoute = PanelCentroRouteImport.update({
   id: '/panel/centro',
   path: '/panel/centro',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/panel/admin': typeof PanelAdminRoute
   '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/data-entry': typeof PanelDataEntryRoute
   '/panel/diaspora': typeof PanelDiasporaRoute
   '/panel/donador': typeof PanelDonadorRoute
   '/panel/empresa': typeof PanelEmpresaRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/panel/admin': typeof PanelAdminRoute
   '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/data-entry': typeof PanelDataEntryRoute
   '/panel/diaspora': typeof PanelDiasporaRoute
   '/panel/donador': typeof PanelDonadorRoute
   '/panel/empresa': typeof PanelEmpresaRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/panel/admin': typeof PanelAdminRoute
   '/panel/autoridad': typeof PanelAutoridadRoute
   '/panel/centro': typeof PanelCentroRoute
+  '/panel/data-entry': typeof PanelDataEntryRoute
   '/panel/diaspora': typeof PanelDiasporaRoute
   '/panel/donador': typeof PanelDonadorRoute
   '/panel/empresa': typeof PanelEmpresaRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/panel/admin'
     | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/data-entry'
     | '/panel/diaspora'
     | '/panel/donador'
     | '/panel/empresa'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/panel/admin'
     | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/data-entry'
     | '/panel/diaspora'
     | '/panel/donador'
     | '/panel/empresa'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/panel/admin'
     | '/panel/autoridad'
     | '/panel/centro'
+    | '/panel/data-entry'
     | '/panel/diaspora'
     | '/panel/donador'
     | '/panel/empresa'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   PanelAdminRoute: typeof PanelAdminRoute
   PanelAutoridadRoute: typeof PanelAutoridadRoute
   PanelCentroRoute: typeof PanelCentroRoute
+  PanelDataEntryRoute: typeof PanelDataEntryRoute
   PanelDiasporaRoute: typeof PanelDiasporaRoute
   PanelDonadorRoute: typeof PanelDonadorRoute
   PanelEmpresaRoute: typeof PanelEmpresaRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelDiasporaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel/data-entry': {
+      id: '/panel/data-entry'
+      path: '/panel/data-entry'
+      fullPath: '/panel/data-entry'
+      preLoaderRoute: typeof PanelDataEntryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/panel/centro': {
       id: '/panel/centro'
       path: '/panel/centro'
@@ -408,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   PanelAdminRoute: PanelAdminRoute,
   PanelAutoridadRoute: PanelAutoridadRoute,
   PanelCentroRoute: PanelCentroRoute,
+  PanelDataEntryRoute: PanelDataEntryRoute,
   PanelDiasporaRoute: PanelDiasporaRoute,
   PanelDonadorRoute: PanelDonadorRoute,
   PanelEmpresaRoute: PanelEmpresaRoute,

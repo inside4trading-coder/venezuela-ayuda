@@ -31,8 +31,9 @@ async function fetchStats(): Promise<LiveStats> {
       .in("status", ["planned", "in_transit"]),
     supabase.from("volunteers").select("status", { count: "exact", head: true }),
     supabase.from("donations").select("status", { count: "exact", head: true }),
-    supabase.from("needs").select("nombre"),
+    supabase.from("needs").select("nombre").not("nombre", "is", null),
   ]);
+  if (needsRes.error) console.warn("useLiveStats needs error:", needsRes.error);
 
   const rows = (centers.data as Array<{ type: string | null; capacity_used: number | null }>) ?? [];
   const byType = {
@@ -61,6 +62,12 @@ async function fetchStats(): Promise<LiveStats> {
     .map(([nombre, count]) => ({ nombre, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
+
+  console.log("[liveStats]", {
+    needsRowsTotal: needsRows.length,
+    uniqueNombres: counts.size,
+    topNeeds,
+  });
 
   return {
     ...byType,

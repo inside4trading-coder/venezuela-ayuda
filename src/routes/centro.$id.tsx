@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useCenter } from "@/hooks/useCenters";
 import { StatusPill } from "@/components/ui-vh/StatusPill";
 import { KindBadge } from "@/components/ui-vh/KindBadge";
+import { AddressLink } from "@/components/centers/AddressLink";
 import { CapacityBar } from "@/components/ui-vh/CapacityBar";
 import { Field, TextInput } from "@/components/ui-vh/Field";
 import {
@@ -148,15 +149,20 @@ function CenterDetail() {
 
           <section>
             <h2 className="font-display font-semibold text-[17px] mb-3">Cómo llegar</h2>
-            <p className="text-[15px]">{center.direccion}</p>
-            <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(center.direccion)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block mt-2 text-[14px] text-[var(--color-operational)] hover:underline"
+            <AddressLink
+              address={center.direccion}
+              lat={center.lat}
+              lng={center.lng}
+              className="text-[15px] text-[var(--color-text-main)] hover:underline"
+            />
+            <AddressLink
+              address={center.direccion}
+              lat={center.lat}
+              lng={center.lng}
+              className="block mt-2 text-[14px] text-[var(--color-operational)] hover:underline"
             >
               Abrir en Google Maps →
-            </a>
+            </AddressLink>
           </section>
 
           <section>

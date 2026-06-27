@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile, ROLE_LABEL, type ProfileRole } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { AddressLink } from "@/components/centers/AddressLink";
 
 export const Route = createFileRoute("/panel/admin")({
   head: () => ({ meta: [{ title: "Panel admin · Venezuela Ayuda" }] }),
@@ -303,7 +304,7 @@ function AdminPanel() {
                     <div className="mt-1 text-[13px] text-[var(--color-text-muted)]">
                       {c.type} · {c.city}, {c.state}
                     </div>
-                    <div className="mt-2 text-[13px]">{c.address}</div>
+                    <AddressLink address={c.address} className="mt-2 block text-[13px] text-[var(--color-operational)] hover:underline" />
                     {c.phone && <div className="text-[13px] font-mono">{c.phone}</div>}
                     <div className="mt-2 text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
                       Registrado {new Date(c.created_at).toLocaleString("es-VE")}

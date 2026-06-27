@@ -5,6 +5,7 @@ import { PanelLayout } from "@/components/panel/PanelLayout";
 import { ProfileFields } from "@/components/panel/ProfileFields";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
+import { AddressLink } from "@/components/centers/AddressLink";
 
 export const Route = createFileRoute("/panel/autoridad")({
   head: () => ({ meta: [{ title: "Panel autoridad · Venezuela Ayuda" }] }),
@@ -97,7 +98,7 @@ function AuthorityPanel() {
                     <div className="text-[13px] text-[var(--color-text-muted)] mt-0.5">
                       {c.type} · {c.city}, {c.state}
                     </div>
-                    <div className="text-[12px] mt-1">{c.address}</div>
+                    <AddressLink address={c.address} className="block text-[12px] mt-1 text-[var(--color-operational)] hover:underline" />
                   </div>
                   <button
                     type="button"

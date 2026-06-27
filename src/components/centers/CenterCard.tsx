@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import type { Center } from "@/data/mock";
 import { StatusPill, statusBorderColor } from "@/components/ui-vh/StatusPill";
 import { KindBadge } from "@/components/ui-vh/KindBadge";
+import { AddressLink } from "@/components/centers/AddressLink";
 
 const NIVEL_STYLES: Record<string, { tag: string; label: string }> = {
   critico: {
@@ -53,12 +54,17 @@ export function CenterCard({ center: c }: { center: Center }) {
         <h3 className="font-display font-semibold text-[15px] leading-snug text-[var(--color-text-main)]">
           {c.nombre}
         </h3>
-        <div className="mt-1 flex items-center gap-1 text-[13px] text-[var(--color-text-muted)]">
+        <AddressLink
+          address={c.direccion || `${c.ciudad}, ${c.estadoVe}`}
+          lat={c.lat}
+          lng={c.lng}
+          className="mt-1 flex items-center gap-1 text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:underline"
+        >
           <MapPin className="h-3 w-3" />
           <span>
             {c.ciudad}, {c.estadoVe}
           </span>
-        </div>
+        </AddressLink>
       </div>
 
       <div className="h-px bg-[var(--color-border)]" />

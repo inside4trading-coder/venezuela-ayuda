@@ -37,6 +37,8 @@ interface BaseCenter {
   tieneUrgente: string[];
   tieneSuficiente: string[];
   actualizadoHaceMin: number;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface AlbergueCenter extends BaseCenter {

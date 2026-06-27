@@ -5,6 +5,7 @@ import type { CenterKind } from "@/data/mock";
 export interface DemandItem {
   nombre: string;
   total: number;
+  nivel?: string;
 }
 
 export interface ActivityEntry {
@@ -62,14 +63,13 @@ export function useImpact() {
           .select("id", { count: "exact", head: true })
           .eq("status", "active");
 
-        // Top demanda desde tabla needs
+        // Todos los needs con nombre y nivel (sin límite)
         const { data: needsData } = await supabase
           .from("needs")
-          .select("nombre")
+          .select("nombre, nivel")
           .not("nombre", "is", null);
 
         // Actividad reciente — columnas reales: center_id, message, created_at
-        // Join con centers para obtener el nombre
         const { data: activityData } = await supabase
           .from("activity_log")
           .select("center_id, message, created_at, centers(name)")
@@ -86,7 +86,7 @@ export function useImpact() {
 
         const centersArr = centers ?? [];
 
-        // Calcular m\u00e9tricas por tipo
+        // Calcular métricas por tipo
         const porTipo: ImpactMetrics["porTipo"] = {
           albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
           acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
@@ -101,17 +101,39 @@ export function useImpact() {
           porTipo[k].metricaValor += c.capacity_used ?? 0;
         }
 
-        // Top demand: agrupar por nombre y contar
-        const demandMap: Record<string, number> = {};
+        // Demanda: agrupar por nombre, priorizar nivel más alto visto
+        // Orden de prioridad: critico > alto > medio > bajo
+        const NIVEL_RANK: Record<string, number> = {
+          critico: 3,
+          alto: 2,
+          medio: 1,
+          bajo: 0,
+        };
+        const demandMap: Record<string, { total: number; nivelMax: string }> = {};
         for (const n of needsData ?? []) {
-          if (n.nombre) {
-            demandMap[n.nombre] = (demandMap[n.nombre] ?? 0) + 1;
+          if (!n.nombre) continue;
+          const existing = demandMap[n.nombre];
+          const nivelRank = NIVEL_RANK[n.nivel ?? "medio"] ?? 1;
+          if (!existing) {
+            demandMap[n.nombre] = { total: 1, nivelMax: n.nivel ?? "medio" };
+          } else {
+            existing.total += 1;
+            if (nivelRank > (NIVEL_RANK[existing.nivelMax] ?? 0)) {
+              existing.nivelMax = n.nivel ?? "medio";
+            }
           }
         }
+
+        // Ordenar: primero por total desc, luego por nivel desc, luego alfabético
         const demand: DemandItem[] = Object.entries(demandMap)
-          .map(([nombre, total]) => ({ nombre, total }))
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 8);
+          .map(([nombre, { total, nivelMax }]) => ({ nombre, total, nivel: nivelMax }))
+          .sort((a, b) => {
+            if (b.total !== a.total) return b.total - a.total;
+            const ra = NIVEL_RANK[a.nivel ?? "medio"] ?? 1;
+            const rb = NIVEL_RANK[b.nivel ?? "medio"] ?? 1;
+            if (rb !== ra) return rb - ra;
+            return a.nombre.localeCompare(b.nombre, "es");
+          });
 
         // Actividad reciente con nombre del centro via join
         const now = Date.now();

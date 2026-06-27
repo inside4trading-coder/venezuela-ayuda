@@ -21,4 +21,23 @@ const anon =
     ? envAnon.trim()
     : FALLBACK_ANON
 
-export const supabase = createClient(url, anon)
+// Solo navegador: con SSR no hay window y supabase no debe parsear URL
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
+
+export const supabase = createClient(url, anon, {
+  auth: {
+    detectSessionInUrl: isBrowser,
+    persistSession: isBrowser,
+    autoRefreshToken: isBrowser,
+    flowType: 'implicit',
+    debug: isBrowser,
+  },
+})
+
+if (isBrowser) {
+  // Log diagnostico para confirmar que el cliente arranca client-side
+  // (visible en DevTools). Si el OAuth vuelve y aqui no se limpia el hash,
+  // sabemos que el bug esta dentro de supabase-js, no en useAuth.
+  // eslint-disable-next-line no-console
+  console.log('[supabase] client created', { url, hashOnLoad: window.location.hash.slice(0, 40) })
+}

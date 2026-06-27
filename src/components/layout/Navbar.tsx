@@ -31,7 +31,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const { isAdmin, isCoordinator, profile } = useProfile();
   const panelPath = profile && profile.role !== "pending" ? ROLE_PANEL_PATH[profile.role] : null;
-  const showRegisterCenter = !isCoordinator && !isAdmin && (!profile || profile.role === "pending");
+  const showRegisterCenter = !isCoordinator && !isAdmin;
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
@@ -78,6 +78,14 @@ export function Navbar() {
               style={{ borderWidth: "0.5px" }}
             >
               Mi panel
+            </Link>
+          )}
+          {profile && !isAdmin && (
+            <Link
+              to="/onboarding"
+              className="text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:underline"
+            >
+              Cambiar mi rol
             </Link>
           )}
           {isAdmin && (
@@ -142,6 +150,15 @@ export function Navbar() {
                 style={{ borderWidth: "0.5px" }}
               >
                 Mi panel
+              </Link>
+            )}
+            {profile && !isAdmin && (
+              <Link
+                to="/onboarding"
+                onClick={() => setOpen(false)}
+                className="text-[13px] text-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] py-2"
+              >
+                Cambiar mi rol
               </Link>
             )}
             {isAdmin && (

@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile, type ProfileRole, ROLE_PANEL_PATH } from "@/hooks/useProfile";
+import { useProfile, type ProfileRole, ROLE_PANEL_PATH, ROLE_LABEL } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
@@ -125,22 +125,25 @@ function Onboarding() {
     );
   }
 
-  if (profile && profile.role !== "pending") {
+  if (profile && profile.role === "admin") {
     return (
       <Centered>
-        <h1 className="font-display text-[22px] mb-2">Ya tienes un rol asignado</h1>
+        <h1 className="font-display text-[22px] mb-2">Eres administrador</h1>
         <p className="text-[13px] text-[var(--color-text-muted)] mb-4">
-          Estás registrado como <strong>{profile.role}</strong>.
+          El rol de admin no se cambia desde acá. Si necesitas otro rol, pide a otro
+          admin que retire tu email de <code>admin_emails</code>.
         </p>
         <Link
-          to={ROLE_PANEL_PATH[profile.role]}
+          to="/panel/admin"
           className="inline-block h-11 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] leading-[44px]"
         >
-          Ir a mi panel
+          Ir al panel admin
         </Link>
       </Centered>
     );
   }
+
+  const currentRole = profile?.role && profile.role !== "pending" ? profile.role : null;
 
   const isVolunteerRole = (r: SelfServiceRole | null) =>
     r === "voluntario" || r === "voluntario_medico";
@@ -285,12 +288,26 @@ function Onboarding() {
     <div className="max-w-[1080px] mx-auto px-4 py-10">
       <header className="mb-8">
         <h1 className="font-display font-semibold text-[28px] leading-tight">
-          ¿Cómo quieres ayudar?
+          {currentRole ? "Cambia tu rol" : "¿Cómo quieres ayudar?"}
         </h1>
         <p className="mt-2 text-[14px] text-[var(--color-text-muted)] max-w-[600px]">
           Elige el rol que mejor describe lo que vas a hacer. Los marcados con un punto
           ámbar requieren verificación manual por un administrador.
         </p>
+        {currentRole && (
+          <div className="mt-4 rounded-md border-hair border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[13px] flex items-center justify-between gap-3 flex-wrap" style={{ borderWidth: "0.5px" }}>
+            <span>
+              Tu rol actual: <strong>{ROLE_LABEL[currentRole] ?? currentRole}</strong>.
+              Elige otro abajo si quieres cambiarlo.
+            </span>
+            <Link
+              to={ROLE_PANEL_PATH[currentRole]}
+              className="text-[13px] text-[var(--color-operational)] hover:underline"
+            >
+              Volver a mi panel →
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

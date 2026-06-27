@@ -98,10 +98,11 @@ function AdminPanel() {
         .from("centers")
         .select("id, name, type, city, state")
         .not("verified_at", "is", null),
+      // Todos los usuarios registrados son candidatos a coordinador
       supabase
         .from('profiles')
-        .select('id, full_name, role')
-        .in('role', ['coordinador', 'data_entry', 'admin'])
+        .select('id, full_name, role, center_id')
+        .not('role', 'eq', 'pending')
         .order('full_name'),
     ]);
     if (c1.error) console.error(c1.error);
@@ -377,7 +378,8 @@ function AdminPanel() {
                       <option value="">Asignar a…</option>
                       {candidates.map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.full_name ?? "(sin nombre)"} ({u.role})
+                          {u.full_name ?? "(sin nombre)"} · {ROLE_LABEL[u.role] ?? u.role}
+                          {u.center_id ? " (ya coord.)" : ""}
                         </option>
                       ))}
                     </select>

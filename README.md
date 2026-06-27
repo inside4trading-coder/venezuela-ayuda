@@ -210,5 +210,5 @@ MIT — usa este código libremente para ayudar. Si lo adaptas para otra emergen
 
 <div align="center">
   <strong>Venezuela Ayuda</strong> · Construido el 27 de junio de 2026 · 
-  <a href="https://venezuelaayuda.com">venezuelaayuda.com</a>
+  <a href="https://vnzla-ayuda.vercel.app/">https://vnzla-ayuda.vercel.app/</a>
 </div>

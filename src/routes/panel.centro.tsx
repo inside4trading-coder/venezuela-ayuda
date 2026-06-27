@@ -329,6 +329,19 @@ function CenterPanel() {
         </p>
       </section>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 -mb-1">
+        <p className="text-[12px] text-[var(--color-text-muted)]">
+          ¿Necesitas más voluntarios? Busca quiénes están disponibles e invítalos directo.
+        </p>
+        <Link
+          to="/voluntarios"
+          className="h-9 px-4 rounded-md border-hair border-[var(--color-operational)] text-[var(--color-operational)] text-[13px] font-display font-semibold leading-[36px] hover:bg-[var(--color-surface-alt)]"
+          style={{ borderWidth: "0.5px" }}
+        >
+          Buscar voluntarios
+        </Link>
+      </div>
+
       <ApplicantsSection centerId={center.id} />
 
       <section className="space-y-4">

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 
 export type ApplicationStatus = "pendiente" | "aceptada" | "rechazada";
 
+export type InitiatedBy = "volunteer" | "center";
+
 export interface Application {
   id: string;
   volunteer_id: string | null;
@@ -10,6 +12,7 @@ export interface Application {
   center_id: string | null;
   message: string | null;
   status: ApplicationStatus;
+  initiated_by: InitiatedBy;
   created_at: string;
   updated_at: string;
 }
@@ -24,8 +27,33 @@ export interface IncomingApplication extends Application {
   applicant_name: string | null;
 }
 
-const APP_COLS =
+const APP_COLS_FULL =
+  "id, volunteer_id, user_id, center_id, message, status, initiated_by, created_at, updated_at";
+const APP_COLS_BASE =
   "id, volunteer_id, user_id, center_id, message, status, created_at, updated_at";
+
+/** SELECT con degradación si initiated_by no existe aún */
+async function selectAppsWithCenter(
+  filter: (q: any) => any,
+): Promise<any[] | null> {
+  const tryRun = async (cols: string) => {
+    let q = supabase
+      .from("volunteer_applications")
+      .select(`${cols}, center:centers(id, name, type, city, state)`);
+    q = filter(q);
+    return q.order("created_at", { ascending: false });
+  };
+  const r1 = await tryRun(APP_COLS_FULL);
+  if (!r1.error) return r1.data as any[];
+  console.warn("apps select full failed:", r1.error.message);
+  const r2 = await tryRun(APP_COLS_BASE);
+  if (r2.error) {
+    console.error("apps select base failed:", r2.error);
+    return null;
+  }
+  // Inyectar initiated_by por default para no romper el render
+  return ((r2.data as any[]) ?? []).map((r) => ({ initiated_by: "volunteer", ...r }));
+}
 
 /** Postulaciones que hizo el voluntario logueado */
 export function useMyApplications(userId: string | null) {
@@ -39,13 +67,8 @@ export function useMyApplications(userId: string | null) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("volunteer_applications")
-      .select(`${APP_COLS}, center:centers(id, name, type, city, state)`)
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-    if (error) console.error("useMyApplications:", error);
-    setItems(((data as unknown) as MyApplication[]) ?? []);
+    const data = await selectAppsWithCenter((q) => q.eq("user_id", userId));
+    setItems(((data ?? []) as unknown) as MyApplication[]);
     setLoading(false);
   }, [userId]);
 
@@ -68,21 +91,32 @@ export function useCenterApplications(centerId: string | null) {
       return;
     }
     setLoading(true);
-    // Embed volunteers; si no resuelve la FK (PostgREST puede inferir mal),
-    // traemos las apps básicas y luego enriquecemos con profile.full_name.
-    const { data: apps, error } = await supabase
-      .from("volunteer_applications")
-      .select(`${APP_COLS}, volunteer:volunteers(id, name, phone, roles)`)
-      .eq("center_id", centerId)
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("useCenterApplications:", error);
-      setItems([]);
-      setLoading(false);
-      return;
+    // Degradación: intenta con initiated_by; si falla, sin él.
+    // Schema real de volunteers: full_name, phone, skills (no name/roles).
+    const tryRun = async (cols: string) =>
+      supabase
+        .from("volunteer_applications")
+        .select(`${cols}, volunteer:volunteers(id, full_name, phone, skills)`)
+        .eq("center_id", centerId)
+        .order("created_at", { ascending: false });
+
+    let apps: any[] | null = null;
+    const r1 = await tryRun(APP_COLS_FULL);
+    if (!r1.error) {
+      apps = r1.data as any[];
+    } else {
+      console.warn("center apps select full failed:", r1.error.message);
+      const r2 = await tryRun(APP_COLS_BASE);
+      if (r2.error) {
+        console.error("useCenterApplications:", r2.error);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      apps = ((r2.data as any[]) ?? []).map((r) => ({ initiated_by: "volunteer", ...r }));
     }
 
-    const rows = (apps as any[]) ?? [];
+    const rows = apps ?? [];
 
     // Enriquecer con full_name del profile cuando user_id está presente
     const userIds = rows.map((r) => r.user_id).filter((id): id is string => !!id);
@@ -98,14 +132,17 @@ export function useCenterApplications(centerId: string | null) {
       );
     }
 
-    const enriched: IncomingApplication[] = rows.map((r) => ({
-      ...r,
-      volunteer: Array.isArray(r.volunteer) ? r.volunteer[0] : r.volunteer,
-      applicant_name:
-        (r.user_id && nameByUser[r.user_id]) ||
-        (Array.isArray(r.volunteer) ? r.volunteer[0]?.name : r.volunteer?.name) ||
-        null,
-    }));
+    const enriched: IncomingApplication[] = rows.map((r) => {
+      const vol = Array.isArray(r.volunteer) ? r.volunteer[0] : r.volunteer;
+      return {
+        ...r,
+        volunteer: vol
+          ? { id: vol.id, name: vol.full_name ?? null, phone: vol.phone ?? null, roles: vol.skills ?? null }
+          : null,
+        applicant_name:
+          (r.user_id && nameByUser[r.user_id]) || vol?.full_name || null,
+      };
+    });
 
     setItems(enriched);
     setLoading(false);

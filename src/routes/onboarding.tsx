@@ -14,6 +14,10 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, type ProfileRole, ROLE_PANEL_PATH } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
+import { CheckGrid } from "@/components/ui-vh/CheckGrid";
+import { Field, Select, TextInput } from "@/components/ui-vh/Field";
+import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
+import { ESTADOS_VENEZUELA } from "@/data/mock";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -96,6 +100,15 @@ function Onboarding() {
   const [selected, setSelected] = useState<SelfServiceRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Paso 2 — solo para voluntarios: completar perfil operativo
+  const [step, setStep] = useState<"role" | "volunteerProfile">("role");
+  const [vskills, setVskills] = useState<string[]>([]);
+  const [vstate, setVstate] = useState("");
+  const [vcity, setVcity] = useState("");
+
+  const toggleSkill = (s: string) =>
+    setVskills((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
+
   if (authLoading || profLoading) return <Centered>Cargando…</Centered>;
 
   if (!user) {
@@ -129,7 +142,10 @@ function Onboarding() {
     );
   }
 
-  const onContinue = async () => {
+  const isVolunteerRole = (r: SelfServiceRole | null) =>
+    r === "voluntario" || r === "voluntario_medico";
+
+  const saveRoleAndMaybeAdvance = async () => {
     if (!selected) return;
     setSubmitting(true);
     try {
@@ -141,6 +157,19 @@ function Onboarding() {
       await refresh();
       const role = selected as ProfileRole;
       const needsVerification = role === "voluntario_medico" || role === "data_entry";
+
+      // Voluntarios pasan al paso 2 antes de redirigir; los demás van directo.
+      if (isVolunteerRole(selected)) {
+        toast.success(
+          needsVerification
+            ? "Rol guardado — completa tu perfil. Un admin lo revisará."
+            : "Rol guardado — completa tu perfil para aparecer en el marketplace.",
+        );
+        setStep("volunteerProfile");
+        setSubmitting(false);
+        return;
+      }
+
       toast.success(
         needsVerification
           ? "Rol guardado — un admin revisará tu cuenta"
@@ -158,6 +187,99 @@ function Onboarding() {
       setSubmitting(false);
     }
   };
+
+  const saveVolunteerProfileAndFinish = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      // Solo actualizamos lo que el user marcó (no obligatorios)
+      const patch: Record<string, unknown> = {};
+      if (vskills.length > 0) patch.skills = vskills;
+      if (vstate.trim()) patch.state = vstate.trim();
+      if (vcity.trim()) patch.city = vcity.trim();
+      if (Object.keys(patch).length > 0) {
+        const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+        if (error) throw error;
+        await refresh();
+      }
+      navigate({ to: ROLE_PANEL_PATH[selected as ProfileRole] });
+    } catch (err: any) {
+      console.error(err);
+      toast.error("No pudimos guardar tu perfil. Reintenta.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onContinue = () => {
+    if (step === "role") return saveRoleAndMaybeAdvance();
+    return saveVolunteerProfileAndFinish();
+  };
+
+  // Paso 2 — perfil voluntario
+  if (step === "volunteerProfile") {
+    return (
+      <div className="max-w-[680px] mx-auto px-4 py-10">
+        <header className="mb-6">
+          <div className="text-[11px] uppercase tracking-label text-[var(--color-text-muted)] mb-2">
+            Paso 2 de 2 · Tu perfil
+          </div>
+          <h1 className="font-display font-semibold text-[26px] leading-tight">
+            Completa tu perfil de voluntario
+          </h1>
+          <p className="mt-2 text-[14px] text-[var(--color-text-muted)]">
+            Sin estos datos no aparecerás en el marketplace de voluntarios. Puedes
+            saltarlos y completarlos después desde tu panel.
+          </p>
+        </header>
+
+        <section className="space-y-4">
+          <div>
+            <div className="block mb-2 text-[13px]">¿En qué puedes ayudar?</div>
+            <CheckGrid
+              options={VOLUNTEER_ROLES}
+              selected={vskills}
+              onToggle={toggleSkill}
+              cols={2}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Estado">
+              <Select value={vstate} onChange={(e) => setVstate(e.target.value)}>
+                <option value="">Selecciona…</option>
+                {ESTADOS_VENEZUELA.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Ciudad o municipio">
+              <TextInput value={vcity} onChange={(e) => setVcity(e.target.value)} />
+            </Field>
+          </div>
+        </section>
+
+        <div className="mt-8 flex justify-between items-center">
+          <button
+            type="button"
+            onClick={saveVolunteerProfileAndFinish}
+            className="text-[13px] text-[var(--color-text-muted)] underline"
+          >
+            Saltar por ahora
+          </button>
+          <button
+            type="button"
+            onClick={onContinue}
+            disabled={submitting}
+            className="h-11 px-6 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[15px] hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting ? "Guardando…" : "Continuar al panel"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1080px] mx-auto px-4 py-10">

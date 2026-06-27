@@ -29,7 +29,11 @@ async function fetchStats(): Promise<LiveStats> {
       .from("routes")
       .select("status")
       .in("status", ["planned", "in_transit"]),
-    supabase.from("volunteers").select("status", { count: "exact", head: true }),
+    // Voluntarios: conteo desde profiles por rol (fuente única de verdad)
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .in("role", ["voluntario", "voluntario_medico"]),
     supabase.from("donations").select("status", { count: "exact", head: true }),
     supabase.from("needs").select("nombre").not("nombre", "is", null),
   ]);
@@ -50,7 +54,6 @@ async function fetchStats(): Promise<LiveStats> {
   const items = ((inv.data as Array<{ quantity: number | null }>) ?? [])
     .reduce((acc, r) => acc + (r.quantity ?? 0), 0);
 
-  // Top 5 necesidades agregadas: contar ocurrencias por nombre.
   const needsRows = (needsRes.data as Array<{ nombre: string | null }>) ?? [];
   const counts = new Map<string, number>();
   for (const r of needsRows) {
@@ -135,7 +138,6 @@ export function statsToTickerItems(s: LiveStats): string[] {
   if (s.donaciones > 0) items.push(`${fmt(s.donaciones)} donaciones registradas`);
 
   if (s.topNeeds.length > 0) {
-    // Línea individual por cada necesidad top, con el contador de centros que la piden
     for (const n of s.topNeeds) {
       const label = n.nombre.length > 40 ? n.nombre.slice(0, 37) + "…" : n.nombre;
       items.push(`Necesita: ${label} (${n.count})`);

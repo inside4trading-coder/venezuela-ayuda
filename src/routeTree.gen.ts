@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VoluntariosRouteImport } from './routes/voluntarios'
 import { Route as RegistrarCentroRouteImport } from './routes/registrar-centro'
 import { Route as NecesidadesRouteImport } from './routes/necesidades'
+import { Route as MarcaRouteImport } from './routes/marca'
 import { Route as ImpactoRouteImport } from './routes/impacto'
 import { Route as CentrosRouteImport } from './routes/centros'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +31,11 @@ const RegistrarCentroRoute = RegistrarCentroRouteImport.update({
 const NecesidadesRoute = NecesidadesRouteImport.update({
   id: '/necesidades',
   path: '/necesidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarcaRoute = MarcaRouteImport.update({
+  id: '/marca',
+  path: '/marca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImpactoRoute = ImpactoRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/impacto': typeof ImpactoRoute
+  '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/impacto': typeof ImpactoRoute
+  '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/impacto': typeof ImpactoRoute
+  '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/impacto'
+    | '/marca'
     | '/necesidades'
     | '/registrar-centro'
     | '/voluntarios'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/impacto'
+    | '/marca'
     | '/necesidades'
     | '/registrar-centro'
     | '/voluntarios'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/impacto'
+    | '/marca'
     | '/necesidades'
     | '/registrar-centro'
     | '/voluntarios'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CentrosRoute: typeof CentrosRoute
   ImpactoRoute: typeof ImpactoRoute
+  MarcaRoute: typeof MarcaRoute
   NecesidadesRoute: typeof NecesidadesRoute
   RegistrarCentroRoute: typeof RegistrarCentroRoute
   VoluntariosRoute: typeof VoluntariosRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/necesidades'
       fullPath: '/necesidades'
       preLoaderRoute: typeof NecesidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marca': {
+      id: '/marca'
+      path: '/marca'
+      fullPath: '/marca'
+      preLoaderRoute: typeof MarcaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/impacto': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CentrosRoute: CentrosRoute,
   ImpactoRoute: ImpactoRoute,
+  MarcaRoute: MarcaRoute,
   NecesidadesRoute: NecesidadesRoute,
   RegistrarCentroRoute: RegistrarCentroRoute,
   VoluntariosRoute: VoluntariosRoute,

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f7f7f5; color: #111111; font-family: "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  ::selection { background: #c8102e; color: #fff; }
+  @keyframes vh-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .vh-pulse-dot { animation: vh-pulse 1.5s ease-in-out infinite; }
+  @keyframes vh-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+</style>
+</helmet>
+
+<div style="position:relative; background:#f7f7f5; overflow-x:hidden;">
+
+  <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:9998; pointer-events:none; max-width:1180px; margin:0 auto; left:0; right:0; padding:0 40px;">
+      <div style="height:100%; background-image:repeating-linear-gradient(to right, rgba(200,16,46,0.07) 0, rgba(200,16,46,0.07) 1px, transparent 1px, transparent calc((100% - 11 * 24px) / 12 + 24px)); background-size:100% 100%;"></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasCopied }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:9999; background:#111111; color:#fff; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.04em; padding:9px 16px; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.18);">Copiado · {{ copied }}</div>
+  </sc-if>
+
+  <!-- ════════════ PORTADA ════════════ -->
+  <section style="max-width:1100px; margin:0 auto; padding:64px 40px 0;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:18px; border-bottom:0.5px solid #e4e4e2; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">
+      <span>Venezuela Ayuda</span>
+      <span>Sistema de Identidad · v1.0</span>
+    </div>
+  </section>
+
+  <section style="max-width:1100px; margin:0 auto; padding:100px 40px 110px;">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:40px;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+      <span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:19px; letter-spacing:-0.01em;">Venezuela Ayuda</span>
+    </div>
+    <h1 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(56px, 9vw, 116px); line-height:0.94; letter-spacing:-0.035em; margin:0; max-width:14ch;">Manual de Marca</h1>
+    <p style="font-family:'Inter',sans-serif; font-size:clamp(18px,2.2vw,24px); line-height:1.4; color:#6b7280; max-width:46ch; margin:36px 0 0;">La identidad de una plataforma de coordinación humanitaria construida para funcionar bajo presión. Clara, operacional, en vivo.</p>
+
+    <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px; margin-top:72px; padding-top:26px; border-top:0.5px solid #e4e4e2;">
+      <div><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:8px;">Versión</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px;">1.0</div></div>
+      <div><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:8px;">Fecha</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px;">Junio 2026</div></div>
+      <div><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:8px;">Licencia</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px;">MIT · Open Source</div></div>
+      <div><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:8px;">Sitio</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px;">venezuelaayuda.com</div></div>
+    </div>
+  </section>
+
+  <!-- ════════════ ÍNDICE ════════════ -->
+  <section style="max-width:1100px; margin:0 auto; padding:0 40px 110px;">
+    <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:28px;">Índice</div>
+    <div style="border-top:0.5px solid #e4e4e2;">
+      <a href="#s01" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">01</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Misión y propósito</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Por qué existimos</span></a>
+      <a href="#s02" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">02</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Logo y marca</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">El pulso</span></a>
+      <a href="#s03" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">03</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Color operacional</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Cada color significa algo</span></a>
+      <a href="#s04" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">04</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Tipografía</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">DM Sans · Inter · DM Mono</span></a>
+      <a href="#s05" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">05</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Componentes</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Badges · pills · cards</span></a>
+      <a href="#s06i" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">06</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Iconografía</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">lucide · 28 íconos</span></a>
+      <a href="#s06" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">07</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Voz y tono</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Cómo escribimos</span></a>
+      <a href="#s07" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">08</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Layout y grid</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Espacio · radios · bordes</span></a>
+      <a href="#s09" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">09</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Recursos gráficos</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Favicon · OG · banners</span></a>
+      <a href="#s08" style="display:flex; align-items:baseline; gap:28px; padding:22px 4px; border-bottom:0.5px solid #e4e4e2; text-decoration:none; color:inherit;" style-hover="background:#f0f0ee;"><span style="font-family:'DM Mono',monospace; font-size:13px; color:#c8102e; width:32px;">10</span><span style="font-family:'DM Sans',sans-serif; font-weight:500; font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; flex:1;">Open source</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Público y libre</span></a>
+    </div>
+  </section>
+
+  <!-- ════════════ 01 MISIÓN ════════════ -->
+  <section id="s01" style="border-top:0.5px solid #e4e4e2; background:#ffffff;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">01</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Misión y propósito</div>
+      </div>
+      <div style="max-width:680px;">
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 28px;">El problema no fue la falta de voluntad para ayudar. Fue la falta de coordinación.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 18px;">El 24 de junio de 2026, un doble terremoto de magnitud 7.2 y 7.5 con epicentro en Yaracuy golpeó a Venezuela. Más de 900 muertos, miles de heridos, decenas de miles de familias desplazadas.</p>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 40px;">Donadores con agua sin saber a qué centro llevarla. Albergues desbordados de ropa y vacíos de medicamentos. Médicos voluntarios sin saber dónde se necesitaban. <strong style="font-weight:600; color:#111;">Venezuela Ayuda es la capa de inteligencia que faltaba:</strong> un directorio en vivo que cruza oferta con demanda, en tiempo real, accesible desde cualquier teléfono.</p>
+
+        <div style="display:grid; grid-template-columns:1fr; gap:0; border-top:0.5px solid #e4e4e2;">
+          <div style="display:flex; gap:24px; padding:22px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#c8102e; width:24px; flex-shrink:0;">A</span><div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px; margin-bottom:5px;">Sin fricción</div><div style="font-size:15px; color:#6b7280; line-height:1.5;">Cualquiera coordina su centro o se registra como voluntario en menos de dos minutos.</div></div></div>
+          <div style="display:flex; gap:24px; padding:22px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#c8102e; width:24px; flex-shrink:0;">B</span><div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px; margin-bottom:5px;">En vivo</div><div style="font-size:15px; color:#6b7280; line-height:1.5;">El directorio se actualiza en tiempo real. Lo que ves es lo que pasa ahora en terreno.</div></div></div>
+          <div style="display:flex; gap:24px; padding:22px 0;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#c8102e; width:24px; flex-shrink:0;">C</span><div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px; margin-bottom:5px;">Acceso universal</div><div style="font-size:15px; color:#6b7280; line-height:1.5;">Funciona en cualquier teléfono, en cualquier conexión. La ayuda no puede depender del dispositivo.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 02 LOGO ════════════ -->
+  <section id="s02" style="border-top:0.5px solid #e4e4e2;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">02</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Logo y marca</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:18ch;">El pulso.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">La marca es una línea de pulso: el latido de una señal en vivo. Significa vida y significa actividad en tiempo real. Se dibuja en el rojo de la bandera venezolana — el mismo color que marca lo urgente en el producto.</p>
+
+        <!-- Mark + lockup -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:48px; display:flex; align-items:center; justify-content:center; min-height:200px;">
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+          </div>
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; min-height:200px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+              <span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.015em;">Venezuela Ayuda</span>
+            </div>
+            <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Lockup horizontal</span>
+          </div>
+        </div>
+
+        <!-- On dark + clear space -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:48px;">
+          <div style="background:#111111; border-radius:8px; padding:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; min-height:180px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+              <span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.015em; color:#fff;">Venezuela Ayuda</span>
+            </div>
+            <span style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9ca3af;">Sobre fondo oscuro · marca en blanco</span>
+          </div>
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:36px; display:flex; align-items:center; justify-content:center; min-height:180px; position:relative;">
+            <div style="position:relative; padding:28px; outline:1px dashed #c8102e44;">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+              <span style="position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#6b7280; white-space:nowrap;">Área de respeto = altura de la marca</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mal uso -->
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#c8102e; margin-bottom:18px;">Mal uso</div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px;">
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:24px 14px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#1a56db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg><span style="font-size:12px; color:#6b7280; line-height:1.4;">No recolorear la marca</span></div>
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:24px 14px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;"><svg width="64" height="32" viewBox="0 0 24 24" fill="none" preserveAspectRatio="none"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg><span style="font-size:12px; color:#6b7280; line-height:1.4;">No deformar ni estirar</span></div>
+          <div style="background:#ffffff; border:0.5px solid #e4e4e2; border-radius:8px; padding:24px 14px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" style="transform:rotate(22deg);"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg><span style="font-size:12px; color:#6b7280; line-height:1.4;">No rotar</span></div>
+          <div style="background:linear-gradient(135deg,#1a56db,#c8102e); border:0.5px solid #e4e4e2; border-radius:8px; padding:24px 14px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg><span style="font-size:12px; color:#fff; line-height:1.4;">No sobre fondos saturados</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 03 COLOR ════════════ -->
+  <section id="s03" style="border-top:0.5px solid #e4e4e2; background:#ffffff;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">03</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Color operacional</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:18ch;">Cada color significa algo. Ninguno es decoración.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">En una emergencia, el color es información. El rojo no es "bonito": es urgente. El azul es acción. El verde es cubierto. Quien usa la plataforma lee el estado de un centro antes de leer una sola palabra.</p>
+
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:16px;">Semánticos · clic para copiar</div>
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:48px;">
+          <div data-val="#C8102E" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;"><div style="height:96px; background:#c8102e;"></div><div style="padding:16px 18px;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px;">Crítico · Urgente</div><div style="display:flex; gap:14px; margin-top:8px; font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;"><span>#C8102E</span><span>--color-critical</span></div></div></div>
+          <div data-val="#1A56DB" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;"><div style="height:96px; background:#1a56db;"></div><div style="padding:16px 18px;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px;">Operacional · Acción</div><div style="display:flex; gap:14px; margin-top:8px; font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;"><span>#1A56DB</span><span>--color-operational</span></div></div></div>
+          <div data-val="#057A55" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;"><div style="height:96px; background:#057a55;"></div><div style="padding:16px 18px;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px;">Resuelto · Cubierto</div><div style="display:flex; gap:14px; margin-top:8px; font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;"><span>#057A55</span><span>--color-resolved</span></div></div></div>
+          <div data-val="#B45309" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;"><div style="height:96px; background:#b45309;"></div><div style="padding:16px 18px;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px;">Precaución · Lleno</div><div style="display:flex; gap:14px; margin-top:8px; font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;"><span>#B45309</span><span>--color-caution</span></div></div></div>
+        </div>
+
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:16px;">Neutrales</div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+          <div data-val="#F7F7F5" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#f7f7f5;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Fondo</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#F7F7F5</div></div></div>
+          <div data-val="#FFFFFF" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#fff; border-bottom:0.5px solid #e4e4e2;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Superficie</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#FFFFFF</div></div></div>
+          <div data-val="#F0F0EE" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#f0f0ee;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Superficie alt</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#F0F0EE</div></div></div>
+          <div data-val="#E4E4E2" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#e4e4e2;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Borde</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#E4E4E2</div></div></div>
+          <div data-val="#111111" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#111111;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Texto principal</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#111111</div></div></div>
+          <div data-val="#6B7280" onClick="{{ copy }}" style="cursor:pointer; border:0.5px solid #e4e4e2; border-radius:6px; overflow:hidden;"><div style="height:56px; background:#6b7280;"></div><div style="padding:10px 12px; background:#fff;"><div style="font-size:13px; font-weight:500;">Texto tenue</div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:3px;">#6B7280</div></div></div>
+        </div>
+
+        <sc-if value="{{ showTokens }}" hint-placeholder-val="{{ true }}">
+          <pre style="margin:32px 0 0; background:#111111; color:#e4e4e2; border-radius:8px; padding:22px 24px; font-family:'DM Mono',monospace; font-size:12.5px; line-height:1.7; overflow-x:auto;"><span style="color:#9ca3af;">--color-critical:</span>    #C8102E  <span style="color:#6b7280;">/* Urgente */</span>
+<span style="color:#9ca3af;">--color-operational:</span> #1A56DB  <span style="color:#6b7280;">/* CTAs · acción */</span>
+<span style="color:#9ca3af;">--color-resolved:</span>    #057A55  <span style="color:#6b7280;">/* Cubierto · OK */</span>
+<span style="color:#9ca3af;">--color-caution:</span>     #B45309  <span style="color:#6b7280;">/* Capacidad llena */</span></pre>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 04 TIPOGRAFÍA ════════════ -->
+  <section id="s04" style="border-top:0.5px solid #e4e4e2;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">04</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Tipografía</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:18ch;">Tres voces, una para cada trabajo.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">DM Sans titula y da carácter. Inter sostiene la interfaz y los datos densos. DM Mono marca lo que debe leerse como dato crudo: horas, cantidades, etiquetas.</p>
+
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; background:#fff; padding:32px 34px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:20px;"><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Display</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">DM Sans · 600</span></div>
+          <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:46px; letter-spacing:-0.025em; line-height:1.05;">Coordinar la ayuda en tiempo real</div>
+        </div>
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; background:#fff; padding:32px 34px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;"><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Interfaz y datos</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">Inter · 400 / 500 / 600</span></div>
+          <div style="font-family:'Inter',sans-serif; font-size:20px; line-height:1.5;">Ves qué falta hoy, en qué centro, y llegas con lo correcto. La plataforma cruza oferta con demanda en vivo.</div>
+        </div>
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; background:#fff; padding:32px 34px; margin-bottom:48px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;"><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Datos y etiquetas</span><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">DM Mono · 400 / 500</span></div>
+          <div style="font-family:'DM Mono',monospace; font-size:18px; line-height:1.6; color:#111;">14:32 · 2.840 familias · 18.400 ítems/sem · ACTUALIZADO HACE 6M</div>
+        </div>
+
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:16px;">Escala tipográfica</div>
+        <div style="border-top:0.5px solid #e4e4e2;">
+          <div style="display:flex; align-items:baseline; gap:24px; padding:16px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; width:120px;">Título · 56px</span><span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:36px; letter-spacing:-0.02em;">Aa</span></div>
+          <div style="display:flex; align-items:baseline; gap:24px; padding:16px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; width:120px;">Sección · 30px</span><span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.02em;">Aa</span></div>
+          <div style="display:flex; align-items:baseline; gap:24px; padding:16px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; width:120px;">Cuerpo · 17px</span><span style="font-family:'Inter',sans-serif; font-size:17px;">Aa · texto de párrafo</span></div>
+          <div style="display:flex; align-items:baseline; gap:24px; padding:16px 0; border-bottom:0.5px solid #e4e4e2;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; width:120px;">UI · 14-15px</span><span style="font-family:'Inter',sans-serif; font-size:14px;">Aa · interfaz y controles</span></div>
+          <div style="display:flex; align-items:baseline; gap:24px; padding:16px 0;"><span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; width:120px;">Label · 11px</span><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#111;">Etiqueta · tracking 0.05em</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 05 COMPONENTES ════════════ -->
+  <section id="s05" style="border-top:0.5px solid #e4e4e2; background:#ffffff;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">05</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Componentes</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch;">Piezas pequeñas, densas y legibles de un vistazo.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">Cada componente comprime el máximo de estado en el mínimo de espacio. Bordes de medio punto, esquinas suaves, mono para los números. Así se ve la información cuando importa que se entienda rápido.</p>
+
+        <!-- KindBadge -->
+        <div style="margin-bottom:40px;">
+          <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">KindBadge · 5 tipos de centro</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #1a56db; color:#1a56db; border-radius:4px;">ALB</span>
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #111111; color:#111111; border-radius:4px;">ACO</span>
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #c8102e; color:#c8102e; border-radius:4px;">MED</span>
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #b45309; color:#b45309; border-radius:4px;">COC</span>
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #057a55; color:#057a55; border-radius:4px;">DIST</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:14px; font-family:'Inter',sans-serif; font-size:12px; color:#6b7280; line-height:1.4;">
+            <span>Albergue</span><span>Acopio de donaciones</span><span>Punto médico</span><span>Cocina comunitaria</span><span>Centro de distribución</span>
+          </div>
+        </div>
+
+        <!-- StatusPill -->
+        <div style="margin-bottom:40px;">
+          <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">StatusPill · estado del centro</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 7px; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #c8102e; color:#c8102e; border-radius:4px;"><span class="vh-pulse-dot" style="display:inline-block; height:6px; width:6px; border-radius:50%; background:currentColor;"></span>URG · Urgente</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 7px; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #057a55; color:#057a55; border-radius:4px;"><span style="display:inline-block; height:6px; width:6px; border-radius:50%; background:currentColor;"></span>OK · Activo</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 7px; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #b45309; color:#b45309; border-radius:4px;"><span style="display:inline-block; height:6px; width:6px; border-radius:50%; background:currentColor;"></span>FULL · Capacidad llena</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 7px; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #e4e4e2; color:#6b7280; border-radius:4px;"><span style="display:inline-block; height:6px; width:6px; border-radius:50%; background:currentColor;"></span>CER · Cerrado</span>
+          </div>
+        </div>
+
+        <!-- CapacityBar + NeedTag -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:40px;">
+          <div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">CapacityBar</div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div><div style="height:6px; width:100%; border-radius:4px; background:#f0f0ee; overflow:hidden;"><div style="height:100%; width:42%; background:#057a55; border-radius:4px;"></div></div><div style="margin-top:6px; font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">42% capacidad</div></div>
+              <div><div style="height:6px; width:100%; border-radius:4px; background:#f0f0ee; overflow:hidden;"><div style="height:100%; width:74%; background:#b45309; border-radius:4px;"></div></div><div style="margin-top:6px; font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">74% capacidad</div></div>
+              <div><div style="height:6px; width:100%; border-radius:4px; background:#f0f0ee; overflow:hidden;"><div style="height:100%; width:96%; background:#c8102e; border-radius:4px;"></div></div><div style="margin-top:6px; font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">96% capacidad</div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">NeedTag · necesita / tiene</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <span style="display:inline-flex; align-items:center; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Agua</span>
+              <span style="display:inline-flex; align-items:center; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Medicamentos</span>
+              <span style="display:inline-flex; align-items:center; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Pañales</span>
+              <span style="display:inline-flex; align-items:center; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #057a55; color:#057a55; background:rgba(5,122,85,0.06);">Ropa</span>
+              <span style="display:inline-flex; align-items:center; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #057a55; color:#057a55; background:rgba(5,122,85,0.06);">Mantas</span>
+            </div>
+            <div style="margin-top:24px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">Botones</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+              <span style="font-family:'Inter',sans-serif; font-size:13px; padding:8px 14px; border-radius:6px; background:#c8102e; color:#fff;">Quiero ayudar</span>
+              <span style="font-family:'Inter',sans-serif; font-size:13px; padding:8px 14px; border-radius:6px; background:#1a56db; color:#fff;">Enviar ayuda</span>
+              <span style="font-family:'Inter',sans-serif; font-size:13px; padding:8px 14px; border-radius:6px; border:0.5px solid #111; color:#111;">Ver detalle</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CenterCard ejemplo -->
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">CenterCard · composición completa</div>
+        <div style="max-width:380px; background:#fff; border:0.5px solid #e4e4e2; border-left:2px solid #c8102e; border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span style="display:inline-flex; align-items:center; padding:3px 7px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #1a56db; color:#1a56db; border-radius:4px;">ALB</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 7px; font-size:11px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; border:0.5px solid #c8102e; color:#c8102e; border-radius:4px;"><span class="vh-pulse-dot" style="display:inline-block; height:6px; width:6px; border-radius:50%; background:currentColor;"></span>URG</span>
+              <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">8m</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px; line-height:1.3;">Albergue Liceo Bolívar</div>
+            <div style="margin-top:4px; display:flex; align-items:center; gap:5px; font-size:13px; color:#6b7280;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0114 0c0 4.5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg><span>San Felipe, Yaracuy</span></div>
+          </div>
+          <div style="height:1px; background:#e4e4e2;"></div>
+          <div><div style="height:6px; width:100%; border-radius:4px; background:#f0f0ee; overflow:hidden;"><div style="height:100%; width:96%; background:#c8102e; border-radius:4px;"></div></div><div style="margin-top:6px; font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">96% capacidad · 184 familias</div></div>
+          <div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:#6b7280; margin-bottom:6px;">Necesita urgente</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              <span style="display:inline-flex; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Agua</span>
+              <span style="display:inline-flex; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Colchonetas</span>
+              <span style="display:inline-flex; padding:2px 10px; font-size:12px; border-radius:999px; border:0.5px solid #c8102e; color:#c8102e; background:rgba(200,16,46,0.06);">Pañales</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; padding-top:2px;">
+            <span style="flex:1; text-align:center; font-size:13px; padding:8px; border-radius:6px; background:#1a56db; color:#fff;">Enviar ayuda</span>
+            <span style="flex:1; text-align:center; font-size:13px; padding:8px; border-radius:6px; border:0.5px solid #e4e4e2; color:#111;">Ver detalle</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 06 ICONOGRAFÍA ════════════ -->
+  <section id="s06i" style="border-top:0.5px solid #e4e4e2;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">06</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Iconografía</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch;">Una sola línea, del logo a cada ícono.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 44px; max-width:60ch;">La marca nace de un ícono de trazo: el pulso. Todo el sistema sigue esa misma regla — <strong style="font-weight:600; color:#111;">lucide</strong>, dibujado sobre un grid de 24, con trazo de 2 px y extremos redondeados. Los íconos heredan el color semántico: rojo es urgente, azul es acción, verde es cubierto. Nunca rellenos, nunca decorativos.</p>
+
+        <!-- Anatomía -->
+        <div style="display:grid; grid-template-columns:200px 1fr; gap:24px; align-items:center; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff; padding:24px; margin-bottom:44px;">
+          <div style="position:relative; aspect-ratio:1; border-radius:6px; background-image:linear-gradient(#f0f0ee 1px, transparent 1px), linear-gradient(90deg, #f0f0ee 1px, transparent 1px); background-size:calc(100%/12) calc(100%/12); border:0.5px solid #e4e4e2; display:flex; align-items:center; justify-content:center;">
+            <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+          </div>
+          <div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:14px;">Anatomía · Activity = el pulso</div>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:14px;">
+              <div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px;">Grid 24 × 24</div><div style="font-size:13px; color:#6b7280; line-height:1.45;">Lienzo base con 2 px de margen óptico.</div></div>
+              <div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px;">Trazo 2 px</div><div style="font-size:13px; color:#6b7280; line-height:1.45;">Constante en cualquier tamaño.</div></div>
+              <div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px;">Extremos redondeados</div><div style="font-size:13px; color:#6b7280; line-height:1.45;">Caps y joins round, sin esquinas duras.</div></div>
+              <div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px;">currentColor</div><div style="font-size:13px; color:#6b7280; line-height:1.45;">Hereda el color semántico del contexto.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Familia 1 · Tipos de centro -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Familia 1 · Tipos de centro</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">5 íconos · color por tipo</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:40px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a56db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.2 12 3l9 7.2"></path><path d="M5 9v11h14V9"></path><path d="M10 20v-6h4v6"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Albergue</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">ALB</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"></path><path d="M3 8l9 5 9-5"></path><path d="M12 13v9"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Acopio</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">ACO</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M12 8.5v7"></path><path d="M8.5 12h7"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Punto médico</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">MED</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16"></path><path d="M5 11v4a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-4"></path><path d="M4 11H2.5"></path><path d="M20 11h1.5"></path><path d="M9 5v2"></path><path d="M12 4v3"></path><path d="M15 5v2"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Cocina</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">COC</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#057a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v8H3z"></path><path d="M14 10h4l3 3v2h-7z"></path><circle cx="7.5" cy="17.5" r="1.8"></circle><circle cx="17.5" cy="17.5" r="1.8"></circle><path d="M9.3 17.5h6.4"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Distribución</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">DIST</div></div></div>
+        </div>
+
+        <!-- Familia 2 · Actores -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Familia 2 · Actores de la red</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">5 íconos</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:40px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8H4v-8"></path><path d="M2.5 8h19v4h-19z"></path><path d="M12 8v12"></path><path d="M12 8S11 3.5 8.5 4a2 2 0 0 0 0 4z"></path><path d="M12 8s1-4.5 3.5-4a2 2 0 0 1 0 4z"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Donador</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 20v-1.5a4.5 4.5 0 0 1 4.5-4.5h2a4.5 4.5 0 0 1 4.5 4.5V20"></path><path d="M19 8.5v5"></path><path d="M16.5 11h5"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Voluntario</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"></rect><rect x="9" y="3" width="6" height="3.4" rx="1"></rect><path d="M9 12h6"></path><path d="M9 16h6"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Coordinador</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"></circle><circle cx="18" cy="5" r="2.5"></circle><path d="M8.5 19H14a3 3 0 0 0 0-6H10a3 3 0 0 1 0-6h5.5"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Transportista</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a14 14 0 0 1 0 18"></path><path d="M12 3a14 14 0 0 0 0 18"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Diáspora</div></div></div>
+        </div>
+
+        <!-- Familia 3 · Estado y métricas -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Familia 3 · Estado y métricas</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">8 íconos</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:40px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#057a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">En vivo</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4 2 18.5A1.6 1.6 0 0 0 3.4 21h17.2a1.6 1.6 0 0 0 1.4-2.5L13.7 4a1.6 1.6 0 0 0-3.4 0z"></path><path d="M12 9.5v4"></path><path d="M12 17h.01"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Urgente</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12l3.5 2"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Actualizado</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M2.5 20v-1.5a4.5 4.5 0 0 1 4.5-4.5h3a4.5 4.5 0 0 1 4.5 4.5V20"></path><path d="M16 5.2a3.2 3.2 0 0 1 0 6"></path><path d="M18.5 20v-1.5a4.5 4.5 0 0 0-3-4.2"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Familias</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Stock</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a56db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s6.5 6 6.5 10.5a6.5 6.5 0 0 1-13 0C5.5 9.5 12 3.5 12 3.5z"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Agua</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7z"></path><path d="M8.5 8.5l7 7"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Medicamentos</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#057a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5 9.5 10l4 4L21 6.5"></path><path d="M15 6.5h6v6"></path></svg><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">Impacto</div></div></div>
+        </div>
+
+        <!-- Familia 4 · Interfaz -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">Familia 4 · Interfaz y navegación</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">10 íconos · en uso en el código</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h17"></path><path d="M3.5 12h17"></path><path d="M3.5 18h17"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Menú</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20.5 20.5 16 16"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Buscar</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"></path><path d="M17 7h3"></path><circle cx="15" cy="7" r="2"></circle><path d="M4 17h3"></path><path d="M11 17h9"></path><circle cx="9" cy="17" r="2"></circle></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Filtros</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15 12 21 12 21z"></path><circle cx="12" cy="10.5" r="2.4"></circle></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Ubicación</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Expandir</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Desplegar</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Cerrar</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#057a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 20 6.5"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Confirmar</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Agregar</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a56db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"></path><path d="M13 6l6 6-6 6"></path></svg><span style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280;">Continuar</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 07 VOZ Y TONO ════════════ -->
+  <section id="s06" style="border-top:0.5px solid #e4e4e2;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">07</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Voz y tono</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch;">Hablamos como un coordinador en terreno.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">Preciso, directo, sin adornos. Urgente sin alarmismo. Cada palabra ayuda a alguien a tomar una decisión más rápido. Si una frase no mueve a la acción, sobra.</p>
+
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:44px;">
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:18px; background:#fff;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px; margin-bottom:6px;">Directo</div><div style="font-size:13px; color:#6b7280; line-height:1.5;">Vamos al grano. Sujeto, verbo, dato.</div></div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:18px; background:#fff;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px; margin-bottom:6px;">Claro</div><div style="font-size:13px; color:#6b7280; line-height:1.5;">Sin jerga. Lo entiende cualquiera, en cualquier teléfono.</div></div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:18px; background:#fff;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px; margin-bottom:6px;">Urgente</div><div style="font-size:13px; color:#6b7280; line-height:1.5;">Transmite prioridad sin gritar ni dramatizar.</div></div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:18px; background:#fff;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px; margin-bottom:6px;">Humano</div><div style="font-size:13px; color:#6b7280; line-height:1.5;">Detrás de cada dato hay familias. No lo olvidamos.</div></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;">
+            <div style="padding:12px 18px; border-bottom:0.5px solid #e4e4e2; display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#057a55;"></span><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#057a55;">Así sí</span></div>
+            <div style="padding:18px;">
+              <p style="margin:0 0 14px; font-size:15px; line-height:1.5;">"Este albergue necesita agua y colchonetas hoy. 184 familias."</p>
+              <p style="margin:0 0 14px; font-size:15px; line-height:1.5;">"Registrá tu centro en 2 minutos."</p>
+              <p style="margin:0; font-size:15px; line-height:1.5;">"Ves qué falta. Llegás con lo correcto."</p>
+            </div>
+          </div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; background:#fff;">
+            <div style="padding:12px 18px; border-bottom:0.5px solid #e4e4e2; display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#c8102e;"></span><span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#c8102e;">Así no</span></div>
+            <div style="padding:18px;">
+              <p style="margin:0 0 14px; font-size:15px; line-height:1.5; color:#6b7280; text-decoration:line-through;">"¡Tragedia sin precedentes! ¡Ayuda ya, no esperes!"</p>
+              <p style="margin:0 0 14px; font-size:15px; line-height:1.5; color:#6b7280; text-decoration:line-through;">"Complete el formulario de onboarding del centro."</p>
+              <p style="margin:0; font-size:15px; line-height:1.5; color:#6b7280; text-decoration:line-through;">"Sinergia colaborativa para optimizar recursos."</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 08 LAYOUT ════════════ -->
+  <section id="s07" style="border-top:0.5px solid #e4e4e2; background:#ffffff;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">08</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Layout y grid</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch;">Bordes de medio punto. Aire medido.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">La estructura es discreta a propósito: divisiones de 0.5px en lugar de cajas pesadas, esquinas de 4–8px y un espaciado consistente. La jerarquía la marca el contenido, no el contenedor.</p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:24px; background:#fff;">
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:18px;">Radios de esquina</div>
+            <div style="display:flex; gap:18px; align-items:flex-end;">
+              <div style="text-align:center;"><div style="width:56px; height:56px; background:#f0f0ee; border:0.5px solid #e4e4e2; border-radius:4px;"></div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:8px;">4px · sm</div></div>
+              <div style="text-align:center;"><div style="width:56px; height:56px; background:#f0f0ee; border:0.5px solid #e4e4e2; border-radius:6px;"></div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:8px;">6px · md</div></div>
+              <div style="text-align:center;"><div style="width:56px; height:56px; background:#f0f0ee; border:0.5px solid #e4e4e2; border-radius:8px;"></div><div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:8px;">8px · lg</div></div>
+            </div>
+          </div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:24px; background:#fff;">
+            <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:18px;">Bordes</div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:14px;"><div style="flex:1; border-bottom:0.5px solid #111;"></div><span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; width:120px;">0.5px · border-hair</span></div>
+              <div style="display:flex; align-items:center; gap:14px;"><div style="flex:1; border-bottom:2px solid #c8102e;"></div><span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; width:120px;">2px · acento izq. card</span></div>
+              <div style="display:flex; align-items:center; gap:14px;"><div style="flex:1; border-bottom:1px dashed #c8102e44;"></div><span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; width:120px;">dashed · área respeto</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:24px; background:#fff;">
+          <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:18px;">Escala de espaciado · base 4px</div>
+          <div style="display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap;">
+            <div style="text-align:center;"><div style="width:24px; height:8px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">8</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:12px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">12</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:16px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">16</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:24px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">24</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:40px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">40</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:56px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">56</div></div>
+            <div style="text-align:center;"><div style="width:24px; height:96px; background:#c8102e;"></div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:6px;">96</div></div>
+          </div>
+          <div style="margin-top:18px; display:flex; gap:24px; flex-wrap:wrap; font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;"><span>Ancho contenido · 1100px</span><span>Ancho app · 1400px</span><span>Padding lateral · 16–40px</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 09 RECURSOS GRÁFICOS ════════════ -->
+  <section id="s09" style="border-top:0.5px solid #e4e4e2;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">09</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-top:14px;">Recursos gráficos</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch;">Todo lo que el sitio necesita para verse bien en cualquier parte.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#374151; margin:0 0 48px; max-width:60ch;">En el navegador, en buscadores y —sobre todo— al compartir el link por WhatsApp. Cada recurso deriva de los mismos tres elementos: la marca de pulso, el rojo crítico y DM Sans. Aquí están todos, con su nombre de archivo y medidas listos para producción.</p>
+
+        <!-- A · Favicon e iconos de app -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">A · Favicon e iconos de app</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">.ico · .png · .svg</span>
+        </div>
+
+        <!-- Browser tab mock -->
+        <div style="background:#f0f0ee; border:0.5px solid #e4e4e2; border-radius:10px 10px 8px 8px; padding:10px 10px 0; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:8px; background:#fff; border:0.5px solid #e4e4e2; border-bottom:none; border-radius:8px 8px 0 0; padding:9px 14px; width:fit-content; max-width:100%;">
+            <div style="width:16px; height:16px; border-radius:4px; background:#c8102e; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg></div>
+            <span style="font-family:'Inter',sans-serif; font-size:13px; color:#111; white-space:nowrap;">Venezuela Ayuda · Coordinar la ayuda</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" style="margin-left:6px;"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+          </div>
+          <div style="background:#fff; border:0.5px solid #e4e4e2; border-radius:0 0 6px 6px; padding:10px 14px; display:flex; align-items:center; gap:8px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20.5 20.5 16 16"></path></svg>
+            <span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280;">venezuelaayuda.com</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:40px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><div style="width:16px; height:16px; border-radius:4px; background:#c8102e; display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg></div><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">favicon-16</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">16×16 .ico</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><div style="width:32px; height:32px; border-radius:7px; background:#c8102e; display:flex; align-items:center; justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg></div><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">favicon-32</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">32×32 .png</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><div style="width:52px; height:52px; border-radius:12px; background:#c8102e; display:flex; align-items:center; justify-content:center;"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg></div><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">apple-touch</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">180×180 .png</div></div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px 8px; border:0.5px solid #e4e4e2; border-radius:8px; background:#fff;"><div style="position:relative; width:52px; height:52px; border-radius:12px; background:#fff; border:0.5px solid #e4e4e2; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:6px; border-radius:50%; border:1px dashed #c8102e55;"></div><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg></div><div style="text-align:center;"><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px;">maskable</div><div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:2px;">512×512 · zona segura</div></div></div>
+        </div>
+
+        <!-- B · Open Graph -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">B · Imagen para compartir · Open Graph</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">og-image.png · 1200×630</span>
+        </div>
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; margin-bottom:14px;">
+          <div style="aspect-ratio:1200/630; background:#111111; padding:7%; display:flex; flex-direction:column; justify-content:space-between; position:relative;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg>
+              <span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(14px,2.4vw,22px); color:#fff; letter-spacing:-0.01em;">Venezuela Ayuda</span>
+              <span style="margin-left:auto; display:inline-flex; align-items:center; gap:7px; font-family:'DM Mono',monospace; font-size:clamp(8px,1.4vw,12px); letter-spacing:0.1em; text-transform:uppercase; color:#fff; border:0.5px solid #c8102e; border-radius:4px; padding:4px 9px;"><span class="vh-pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#c8102e;"></span>En vivo</span>
+            </div>
+            <div>
+              <h3 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(22px,5.2vw,52px); line-height:1.02; letter-spacing:-0.03em; color:#fff; margin:0; max-width:16ch;">Coordinar la ayuda en tiempo real.</h3>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:3%; border-top:0.5px solid #333;">
+              <span style="font-family:'DM Mono',monospace; font-size:clamp(9px,1.6vw,14px); color:#9ca3af;">venezuelaayuda.com</span>
+              <span style="font-family:'DM Mono',monospace; font-size:clamp(9px,1.6vw,14px); color:#9ca3af;">Open Source · MIT</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-bottom:40px;"><span>1200×630 px</span><span>· ratio 1.91:1</span><span>· &lt; 300 KB</span><span>· og:image &amp; twitter:image</span></div>
+
+        <!-- C · Preview del link en chat -->
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280; margin-bottom:16px;">C · Así se ve al compartir el link</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:40px;">
+          <div style="background:#f0f0ee; border:0.5px solid #e4e4e2; border-radius:8px; padding:20px;">
+            <div style="background:#fff; border-radius:10px 10px 10px 2px; box-shadow:0 1px 2px rgba(0,0,0,0.06); overflow:hidden; max-width:300px;">
+              <div style="aspect-ratio:1200/630; background:#111; display:flex; flex-direction:column; justify-content:center; padding:16px;">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg><span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:12px; color:#fff;">Venezuela Ayuda</span></div>
+                <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:15px; line-height:1.05; letter-spacing:-0.02em; color:#fff;">Coordinar la ayuda en tiempo real.</div>
+              </div>
+              <div style="padding:10px 14px;">
+                <div style="font-family:'Inter',sans-serif; font-weight:600; font-size:13px; color:#111;">Venezuela Ayuda</div>
+                <div style="font-family:'Inter',sans-serif; font-size:12px; color:#6b7280; line-height:1.4; margin-top:2px;">Ves qué falta hoy, en qué centro, y llegas con lo correcto.</div>
+                <div style="font-family:'DM Mono',monospace; font-size:11px; color:#9ca3af; margin-top:6px;">venezuelaayuda.com</div>
+              </div>
+            </div>
+            <div style="font-family:'DM Mono',monospace; font-size:10px; color:#6b7280; margin-top:12px;">WhatsApp · Telegram</div>
+          </div>
+          <div style="border:0.5px solid #e4e4e2; border-radius:8px; padding:22px; background:#fff;">
+            <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:16px; margin-bottom:14px;">Etiquetas meta requeridas</div>
+            <pre style="margin:0; background:#111111; color:#e4e4e2; border-radius:6px; padding:16px; font-family:'DM Mono',monospace; font-size:11px; line-height:1.7; overflow-x:auto;"><span style="color:#6b7280;">&lt;meta</span> property=<span style="color:#9ca3af;">"og:title"</span> ...<span style="color:#6b7280;">&gt;</span>
+<span style="color:#6b7280;">&lt;meta</span> property=<span style="color:#9ca3af;">"og:description"</span> ...<span style="color:#6b7280;">&gt;</span>
+<span style="color:#6b7280;">&lt;meta</span> property=<span style="color:#9ca3af;">"og:image"</span> ...<span style="color:#6b7280;">&gt;</span>
+<span style="color:#6b7280;">&lt;meta</span> name=<span style="color:#9ca3af;">"twitter:card"</span>
+      content=<span style="color:#9ca3af;">"summary_large_image"</span><span style="color:#6b7280;">&gt;</span></pre>
+            <div style="font-size:13px; color:#6b7280; line-height:1.5; margin-top:14px;">La diáspora comparte el link por chat. Si el preview no carga, el mensaje pierde fuerza — estas etiquetas no son opcionales.</div>
+          </div>
+        </div>
+
+        <!-- D · Banners -->
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#6b7280;">D · Banners</span>
+          <span style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280;">web · social · story</span>
+        </div>
+
+        <!-- Web hero banner -->
+        <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; margin-bottom:16px;">
+          <div style="aspect-ratio:1200/300; background:#c8102e; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 6%;">
+            <div>
+              <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(18px,3.4vw,34px); line-height:1.05; letter-spacing:-0.02em; color:#fff; max-width:20ch;">Cada centro que se suma hace la red más útil.</div>
+              <div style="font-family:'Inter',sans-serif; font-size:clamp(11px,1.6vw,16px); color:#ffffffcc; margin-top:8px;">Registrá tu centro en 2 minutos.</div>
+            </div>
+            <span style="flex-shrink:0; font-family:'Inter',sans-serif; font-weight:500; font-size:clamp(11px,1.6vw,15px); background:#fff; color:#c8102e; padding:10px 18px; border-radius:6px;">Quiero ayudar</span>
+          </div>
+        </div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-bottom:24px;">banner-web.png · 1200×300 px</div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Social square 1:1 -->
+          <div>
+            <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden;">
+              <div style="aspect-ratio:1/1; background:#111111; padding:10%; display:flex; flex-direction:column; justify-content:space-between;">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c8102e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg>
+                <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(20px,4.4vw,32px); line-height:1.05; letter-spacing:-0.025em; color:#fff;">Coordinar la ayuda en tiempo real.</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; font-family:'DM Mono',monospace; font-size:clamp(9px,1.8vw,13px); color:#9ca3af;"><span>venezuelaayuda.com</span><span style="color:#c8102e;">●</span></div>
+              </div>
+            </div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:12px;">social-1x1.png · 1080×1080</div>
+          </div>
+          <!-- Story 9:16 -->
+          <div>
+            <div style="border:0.5px solid #e4e4e2; border-radius:8px; overflow:hidden; max-width:240px; margin:0 auto;">
+              <div style="aspect-ratio:9/16; background:#c8102e; padding:12%; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 4 12 3-8 2 4h5"></path></svg>
+                <div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(20px,3vw,28px); line-height:1.05; letter-spacing:-0.025em; color:#fff;">La ayuda no puede esperar a la burocracia.</div>
+                <span style="font-family:'Inter',sans-serif; font-weight:500; font-size:13px; background:#fff; color:#c8102e; padding:9px 16px; border-radius:6px;">Quiero ayudar →</span>
+              </div>
+            </div>
+            <div style="font-family:'DM Mono',monospace; font-size:11px; color:#6b7280; margin-top:12px; text-align:center;">story-9x16.png · 1080×1920</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 10 OPEN SOURCE ════════════ -->
+  <section id="s08" style="border-top:0.5px solid #e4e4e2; background:#111111; color:#fff;">
+    <div style="max-width:1100px; margin:0 auto; padding:96px 40px; display:grid; grid-template-columns:180px 1fr; gap:56px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:48px; font-weight:500; color:#c8102e; line-height:1;">10</div>
+        <div style="font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#9ca3af; margin-top:14px;">Open source</div>
+      </div>
+      <div>
+        <h2 style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:clamp(30px,4vw,46px); line-height:1.06; letter-spacing:-0.025em; margin:0 0 20px; max-width:20ch; color:#fff;">Público y libre. Esta marca es de todos.</h2>
+        <p style="font-size:18px; line-height:1.6; color:#d1d5db; margin:0 0 48px; max-width:60ch;">Venezuela Ayuda es código abierto bajo licencia MIT. Usá este sistema libremente para ayudar. Si lo adaptás para otra emergencia humanitaria, nos encantaría saberlo. La marca solo cumple su función si llega a quien la necesita.</p>
+
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:40px;">
+          <div style="border:0.5px solid #333; border-radius:8px; padding:22px; background:#1a1a1a;"><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9ca3af; margin-bottom:10px;">Licencia</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:20px;">MIT</div><div style="font-size:13px; color:#9ca3af; margin-top:6px; line-height:1.5;">Usalo, copialo, adaptalo. Sin permisos.</div></div>
+          <div style="border:0.5px solid #333; border-radius:8px; padding:22px; background:#1a1a1a;"><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9ca3af; margin-bottom:10px;">Repositorio</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:20px;">GitHub</div><div style="font-family:'DM Mono',monospace; font-size:12px; color:#9ca3af; margin-top:6px; line-height:1.5;">/venezuela-ayuda</div></div>
+          <div style="border:0.5px solid #333; border-radius:8px; padding:22px; background:#1a1a1a;"><div style="font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#9ca3af; margin-bottom:10px;">Sitio</div><div style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:20px;">venezuelaayuda.com</div><div style="font-size:13px; color:#9ca3af; margin-top:6px; line-height:1.5;">El directorio en vivo.</div></div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:14px; padding-top:32px; border-top:0.5px solid #333;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12h4l2-6 4 12 3-8 2 4h5" stroke="#c8102e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+          <span style="font-family:'DM Sans',sans-serif; font-weight:600; font-size:18px;">Venezuela Ayuda</span>
+          <span style="font-family:'DM Mono',monospace; font-size:12px; color:#6b7280; margin-left:auto;">Manual de Marca · v1.0 · Junio 2026</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<template id="__bundler_thumbnail" data-bg-color="#f7f7f5">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#f7f7f5"></rect>
+    <path d="M250 400h120l60-180 120 360 90-240 60 120h200" fill="none" stroke="#c8102e" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>
+</template></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900},&quot;showGrid&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Manual&quot;,&quot;label&quot;:&quot;Mostrar grid de columnas&quot;},&quot;showTokens&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Manual&quot;,&quot;label&quot;:&quot;Mostrar tokens CSS&quot;}}">
+class Component extends DCLogic {
+  state = { copied: null };
+
+  renderVals() {
+    const copy = (e) => {
+      const el = e && e.currentTarget ? e.currentTarget : null;
+      const v = el && el.dataset ? el.dataset.val : null;
+      if (!v) return;
+      try { if (navigator.clipboard) navigator.clipboard.writeText(v); } catch (_) {}
+      this.setState({ copied: v });
+      clearTimeout(this._t);
+      this._t = setTimeout(() => this.setState({ copied: null }), 1500);
+    };
+    return {
+      showGrid: this.props.showGrid ?? false,
+      showTokens: this.props.showTokens ?? true,
+      copied: this.state.copied,
+      hasCopied: !!this.state.copied,
+      copy,
+    };
+  }
+}
+</script>
+</body>
+</html>

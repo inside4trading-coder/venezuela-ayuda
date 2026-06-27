@@ -1,6 +1,7 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+﻿import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState } from "react";
+import { AuthButton } from "@/components/auth/AuthButton";
 
 const LINKS = [
   { to: "/", label: "Inicio" },
@@ -62,7 +63,8 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          <AuthButton />
           <Link
             to="/registrar-centro"
             className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"
@@ -117,6 +119,9 @@ export function Navbar() {
             >
               Quiero ayudar
             </Link>
+          </div>
+          <div className="pt-2 border-t border-hair border-[var(--color-border)]">
+            <AuthButton />
           </div>
         </div>
       )}

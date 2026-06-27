@@ -144,7 +144,7 @@ async function fetchAll(): Promise<Center[]> {
     try {
       const { data, error } = await supabase.from("centers").select(`
           id, name, type, status, address, city, state,
-          lat, lng, phone, capacity, capacity_used, verified,
+          lat, lng, phone, capacity, capacity_used, verified_at,
           needs ( id, nombre, nivel, cantidad_aprox )
         `);
 
@@ -262,7 +262,7 @@ export function useCenter(id: string | undefined) {
           .from("centers")
           .select(`
             id, name, type, status, address, city, state,
-            lat, lng, phone, capacity, capacity_used, verified,
+            lat, lng, phone, capacity, capacity_used, verified_at,
             needs ( id, nombre, nivel, cantidad_aprox )
           `)
           .eq("id", id)

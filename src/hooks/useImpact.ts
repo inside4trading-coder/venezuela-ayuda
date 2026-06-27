@@ -51,11 +51,13 @@ export function useImpact() {
     async function load() {
       setIsLoading(true);
       try {
-        // Centros activos y conteo por tipo
+        // Centros activos y conteo por tipo.
+        // Incluye filas con status NULL: `neq('cerrado')` por sí solo las
+        // descarta por la regla de three-valued logic de SQL.
         const { data: centers } = await supabase
           .from("centers")
           .select("id, type, status, state, capacity_used")
-          .neq("status", "cerrado");
+          .or("status.is.null,status.neq.cerrado");
 
         // Voluntarios activos
         const { count: voluntariosCount } = await supabase

@@ -39,6 +39,28 @@ const EMPTY_METRICS: ImpactMetrics = {
   },
 };
 
+/**
+ * Ítems estándar/canónicos para la vista agregada de /necesidades.
+ * Los nombres libres (texto largo, medicamentos específicos, etc.) se muestran
+ * solo en el detalle de cada centro, no aquí.
+ * TODO (Opción B): reemplazar por campo is_standard=true en tabla needs.
+ */
+const STANDARD_NEEDS = new Set([
+  "Medicamentos básicos",
+  "Kit primeros auxilios",
+  "Agua potable",
+  "Colchonetas/frazadas",
+  "Pañales",
+  "Alimentos no perecederos",
+  "Medicamentos crónicos",
+  "Ropa niños",
+  "Guantes",
+  "Guantes descartables",
+  "Inyectadoras",
+  "Ropa adulto",
+  "Zapatos",
+]);
+
 export function useImpact() {
   const [metrics, setMetrics] = useState<ImpactMetrics>(EMPTY_METRICS);
   const [topDemand, setTopDemand] = useState<DemandItem[]>([]);
@@ -51,34 +73,29 @@ export function useImpact() {
     async function load() {
       setIsLoading(true);
       try {
-        // Centros activos y conteo por tipo.
-        // Incluye filas con status NULL: `neq('cerrado')` por sí solo las
-        // descarta por la regla de three-valued logic de SQL.
         const { data: centers } = await supabase
           .from("centers")
           .select("id, type, status, state, capacity_used")
           .or("status.is.null,status.neq.cerrado");
 
-        // Voluntarios: conteo desde profiles por rol
         const { count: voluntariosCount } = await supabase
           .from("profiles")
           .select("id", { count: "exact", head: true })
           .in("role", ["voluntario", "voluntario_medico"]);
 
-        // Todos los needs con nombre y nivel (sin límite)
+        // Solo needs estándar para la vista agregada de /necesidades.
+        // Los ítems de texto libre siguen visible en el detalle de cada centro.
         const { data: needsData } = await supabase
           .from("needs")
           .select("nombre, nivel")
-          .not("nombre", "is", null);
+          .in("nombre", Array.from(STANDARD_NEEDS));
 
-        // Actividad reciente — columnas reales: center_id, message, created_at
         const { data: activityData } = await supabase
           .from("activity_log")
           .select("center_id, message, created_at, centers(name)")
           .order("created_at", { ascending: false })
           .limit(10);
 
-        // Donaciones para familias atendidas
         const { count: donationsCount } = await supabase
           .from("donations")
           .select("id", { count: "exact", head: true })
@@ -88,7 +105,6 @@ export function useImpact() {
 
         const centersArr = centers ?? [];
 
-        // Calcular métricas por tipo
         const porTipo: ImpactMetrics["porTipo"] = {
           albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
           acopio: { total: 0, metricaLabel: "items movidos / sem", metricaValor: 0 },
@@ -103,8 +119,6 @@ export function useImpact() {
           porTipo[k].metricaValor += c.capacity_used ?? 0;
         }
 
-        // Demanda: agrupar por nombre, priorizar nivel más alto visto
-        // Orden de prioridad: critico > alto > medio > bajo
         const NIVEL_RANK: Record<string, number> = {
           critico: 3,
           alto: 2,
@@ -126,7 +140,6 @@ export function useImpact() {
           }
         }
 
-        // Ordenar: primero por total desc, luego por nivel desc, luego alfabético
         const demand: DemandItem[] = Object.entries(demandMap)
           .map(([nombre, { total, nivelMax }]) => ({ nombre, total, nivel: nivelMax }))
           .sort((a, b) => {
@@ -137,7 +150,6 @@ export function useImpact() {
             return a.nombre.localeCompare(b.nombre, "es");
           });
 
-        // Actividad reciente con nombre del centro via join
         const now = Date.now();
         const activity: ActivityEntry[] = (activityData ?? []).map((a: any) => ({
           centro: a.centers?.name ?? "Centro",

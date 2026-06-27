@@ -64,7 +64,6 @@ function AdminPanel() {
 
   const load = async () => {
     setLoading(true);
-    // Centros con coordinador asignado (cualquier profile con center_id)
     const { data: assignedRows } = await supabase
       .from("profiles")
       .select("center_id")
@@ -76,7 +75,7 @@ function AdminPanel() {
         .filter(Boolean) as string[],
     );
 
-    const [c1, c2, p, allCenters, cands] = await Promise.all([
+    const [c1, c2, p, allCenters, candsResult] = await Promise.all([
       supabase
         .from("centers")
         .select("id, name, type, city, state, address, phone, created_at, created_by, verified_at")
@@ -98,16 +97,15 @@ function AdminPanel() {
         .from("centers")
         .select("id, name, type, city, state")
         .not("verified_at", "is", null),
-      // Todos los usuarios registrados son candidatos a coordinador
-      supabase
-        .from('profiles')
-        .select('id, full_name, role, center_id')
-        .not('role', 'eq', 'pending')
-        .order('full_name'),
+      // RPC con SECURITY DEFINER para leer todos los perfiles sin limitación de RLS
+      supabase.rpc('get_all_profiles_for_admin'),
     ]);
+
     if (c1.error) console.error(c1.error);
     if (c2.error) console.error(c2.error);
     if (p.error) console.error(p.error);
+    if (candsResult.error) console.error('RPC candidates error:', candsResult.error);
+
     setPendingCenters((c1.data as PendingCenter[]) ?? []);
     setVerifiedCenters((c2.data as PendingCenter[]) ?? []);
     setPendingProfiles((p.data as PendingProfile[]) ?? []);
@@ -115,7 +113,7 @@ function AdminPanel() {
       (c) => !assignedIds.has(c.id),
     );
     setOrphanCenters(orphans);
-    setCandidates((cands.data as CandidateProfile[]) ?? []);
+    setCandidates((candsResult.data as CandidateProfile[]) ?? []);
     setLoading(false);
   };
 

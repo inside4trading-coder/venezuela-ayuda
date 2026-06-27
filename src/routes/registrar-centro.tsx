@@ -177,7 +177,6 @@ function RegisterCenter() {
           phone: blank(form.telefono),
           capacity,
           capacity_used,
-          verified: false,
           verified_at: null,
           created_by: user.id,
         })
@@ -236,7 +235,8 @@ function RegisterCenter() {
       if (!isAdmin) navigate({ to: "/panel/centro" });
     } catch (err: any) {
       console.error("Error registrando centro:", err);
-      toast.error("Hubo un problema al registrar el centro. Intenta de nuevo.");
+      const detail = err?.message || err?.error_description || err?.details || "";
+      toast.error(detail ? `No se pudo registrar: ${detail}` : "Hubo un problema al registrar el centro.");
     } finally {
       setSubmitting(false);
     }

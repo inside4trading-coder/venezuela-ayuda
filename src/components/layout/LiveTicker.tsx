@@ -1,21 +1,18 @@
-const ITEMS = [
-  "47 albergues alojan 2.840 familias",
-  "23 acopios movieron 18.400 items esta semana",
-  "12 puntos médicos · 4.120 atenciones / sem",
-  "8 cocinas reparten 6.800 raciones / día",
-  "6 rutas activas en última milla",
-  "Última actualización: hace 2 min",
-];
+import { useLiveStats, statsToTickerItems } from "@/hooks/useLiveStats";
 
-function Segment() {
+const FALLBACK = ["Cargando estado en vivo…"];
+
+function Segment({ items }: { items: string[] }) {
   return (
     <>
       <span className="vh-pulse-dot mx-6 text-[var(--color-critical)]">●</span>
       <span className="mr-6 tracking-label">EN VIVO</span>
-      {ITEMS.map((t, i) => (
+      {items.map((t, i) => (
         <span key={i} className="mr-6">
           {t}
-          {i < ITEMS.length - 1 && <span className="ml-6 text-[var(--color-text-muted)]">·</span>}
+          {i < items.length - 1 && (
+            <span className="ml-6 text-[var(--color-text-muted)]">·</span>
+          )}
         </span>
       ))}
     </>
@@ -23,6 +20,9 @@ function Segment() {
 }
 
 export function LiveTicker() {
+  const stats = useLiveStats();
+  const items = stats ? statsToTickerItems(stats) : FALLBACK;
+
   return (
     <div
       className="fixed top-0 inset-x-0 z-50 h-8 bg-[#111] text-[#f7f7f5] overflow-hidden flex items-center"
@@ -31,10 +31,10 @@ export function LiveTicker() {
     >
       <div className="vh-marquee-track font-mono text-[12px]">
         <span className="inline-flex items-center pr-12">
-          <Segment />
+          <Segment items={items} />
         </span>
         <span className="inline-flex items-center pr-12" aria-hidden="true">
-          <Segment />
+          <Segment items={items} />
         </span>
       </div>
     </div>

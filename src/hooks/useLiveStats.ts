@@ -1,0 +1,121 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export interface LiveStats {
+  albergues: number;
+  acopios: number;
+  medicos: number;
+  cocinas: number;
+  distribucion: number;
+  familiasEnAlbergues: number;
+  itemsEnInventario: number;
+  rutasActivas: number;
+  voluntarios: number;
+  donaciones: number;
+  lastUpdate: Date;
+}
+
+const REFRESH_MS = 60_000;
+
+async function fetchStats(): Promise<LiveStats> {
+  const [centers, inv, routes, vols, dons] = await Promise.all([
+    supabase
+      .from("centers")
+      .select("type, capacity_used")
+      .not("verified_at", "is", null),
+    supabase.from("inventory_items").select("quantity"),
+    supabase
+      .from("routes")
+      .select("status")
+      .in("status", ["planned", "in_transit"]),
+    supabase.from("volunteers").select("status", { count: "exact", head: true }),
+    supabase.from("donations").select("status", { count: "exact", head: true }),
+  ]);
+
+  const rows = (centers.data as Array<{ type: string | null; capacity_used: number | null }>) ?? [];
+  const byType = {
+    albergues: rows.filter((r) => r.type === "albergue").length,
+    acopios: rows.filter((r) => r.type === "acopio").length,
+    medicos: rows.filter((r) => r.type === "medico").length,
+    cocinas: rows.filter((r) => r.type === "cocina").length,
+    distribucion: rows.filter((r) => r.type === "distribucion").length,
+  };
+  const familias = rows
+    .filter((r) => r.type === "albergue")
+    .reduce((acc, r) => acc + (r.capacity_used ?? 0), 0);
+
+  const items = ((inv.data as Array<{ quantity: number | null }>) ?? [])
+    .reduce((acc, r) => acc + (r.quantity ?? 0), 0);
+
+  return {
+    ...byType,
+    familiasEnAlbergues: familias,
+    itemsEnInventario: items,
+    rutasActivas: (routes.data ?? []).length,
+    voluntarios: vols.count ?? 0,
+    donaciones: dons.count ?? 0,
+    lastUpdate: new Date(),
+  };
+}
+
+export function useLiveStats() {
+  const [stats, setStats] = useState<LiveStats | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const tick = async () => {
+      try {
+        const s = await fetchStats();
+        if (alive) setStats(s);
+      } catch (err) {
+        console.warn("useLiveStats:", err);
+      }
+    };
+    tick();
+    const id = setInterval(tick, REFRESH_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  return stats;
+}
+
+const fmt = (n: number) =>
+  n >= 1000 ? n.toLocaleString("es-VE") : n.toString();
+
+/** Convierte stats en líneas humanas para el ticker. Omite las que dan 0. */
+export function statsToTickerItems(s: LiveStats): string[] {
+  const items: string[] = [];
+  if (s.albergues > 0)
+    items.push(
+      s.familiasEnAlbergues > 0
+        ? `${s.albergues} albergues · ${fmt(s.familiasEnAlbergues)} familias`
+        : `${s.albergues} albergues activos`,
+    );
+  if (s.acopios > 0)
+    items.push(
+      s.itemsEnInventario > 0
+        ? `${s.acopios} acopios · ${fmt(s.itemsEnInventario)} ítems en stock`
+        : `${s.acopios} acopios activos`,
+    );
+  if (s.medicos > 0) items.push(`${s.medicos} puntos médicos`);
+  if (s.cocinas > 0) items.push(`${s.cocinas} cocinas comunitarias`);
+  if (s.distribucion > 0)
+    items.push(
+      s.rutasActivas > 0
+        ? `${s.distribucion} centros de distribución · ${s.rutasActivas} rutas activas`
+        : `${s.distribucion} centros de distribución`,
+    );
+  if (s.voluntarios > 0) items.push(`${fmt(s.voluntarios)} voluntarios`);
+  if (s.donaciones > 0) items.push(`${fmt(s.donaciones)} donaciones registradas`);
+
+  const mins = Math.max(0, Math.round((Date.now() - s.lastUpdate.getTime()) / 60_000));
+  items.push(
+    mins === 0
+      ? "Actualizado ahora"
+      : `Actualizado hace ${mins} ${mins === 1 ? "min" : "min"}`,
+  );
+  return items;
+}

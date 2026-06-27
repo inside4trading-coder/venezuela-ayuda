@@ -201,7 +201,8 @@ function CenterPanel() {
       .single();
     if (error) {
       console.error(error);
-      toast.error("No se pudo añadir el ítem");
+      const detail = error.message || error.details || "";
+      toast.error(detail ? `No se pudo añadir: ${detail}` : "No se pudo añadir el ítem");
       return;
     }
     setInventory((xs) => [...xs, data as InventoryRow]);

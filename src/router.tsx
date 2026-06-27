@@ -9,8 +9,16 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
   });
 
   return router;
 };
+
+// Tipos para useRouter() / Link, etc.
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}

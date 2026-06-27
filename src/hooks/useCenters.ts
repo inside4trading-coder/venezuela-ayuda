@@ -149,42 +149,36 @@ async function fetchAll(): Promise<Center[]> {
 
   _promise = (async () => {
     try {
-      // Estrategia de degradación: probamos con todas las columnas + embed,
-      // y vamos quitando lo opcional si la DB no lo tiene.
+      // Degradación: preservamos el embed `needs` (alta prioridad de UX)
+      // mientras dejamos `needed_roles` como opcional.
       // 1. Full: needed_roles + needs embed
-      // 2. Sin embed: needed_roles
-      // 3. Sin needed_roles: solo columnas base
-      let data: any = null;
-      let lastErr: any = null;
-
-      const r1 = await supabase.from("centers").select(`
+      // 2. Sin needed_roles pero CON embed needs
+      // 3. Sin embed needs (último recurso): solo columnas base
+      const BASE = `
         id, name, type, status, address, city, state,
-        lat, lng, phone, capacity, capacity_used, verified_at, needed_roles,
-        needs ( id, nombre, nivel, cantidad_aprox )
-      `);
+        lat, lng, phone, capacity, capacity_used, verified_at
+      `;
+      let data: any = null;
+
+      const r1 = await supabase
+        .from("centers")
+        .select(`${BASE}, needed_roles, needs ( id, nombre, nivel, cantidad_aprox )`);
       if (!r1.error) {
         data = r1.data;
       } else {
-        console.warn("centers select full failed:", r1.error.message);
-        lastErr = r1.error;
-        const r2 = await supabase.from("centers").select(`
-          id, name, type, status, address, city, state,
-          lat, lng, phone, capacity, capacity_used, verified_at, needed_roles
-        `);
+        console.warn("centers select with needed_roles failed:", r1.error.message);
+        const r2 = await supabase
+          .from("centers")
+          .select(`${BASE}, needs ( id, nombre, nivel, cantidad_aprox )`);
         if (!r2.error) {
           data = r2.data;
         } else {
-          console.warn("centers select sin embed failed:", r2.error.message);
-          lastErr = r2.error;
-          const r3 = await supabase.from("centers").select(`
-            id, name, type, status, address, city, state,
-            lat, lng, phone, capacity, capacity_used, verified_at
-          `);
+          console.warn("centers select with needs embed failed:", r2.error.message);
+          const r3 = await supabase.from("centers").select(BASE);
           if (r3.error) throw r3.error;
           data = r3.data;
         }
       }
-      void lastErr;
 
       _cache = (data ?? []).map(mapRow);
       return _cache;
@@ -296,15 +290,15 @@ export function useCenter(id: string | undefined) {
     const fetchSingle = async () => {
       setIsLoading(true);
       try {
-        // Misma degradación que fetchAll por si needed_roles o la FK con needs no existe
+        // Misma estrategia que fetchAll: priorizar needs embed sobre needed_roles
+        const BASE = `
+          id, name, type, status, address, city, state,
+          lat, lng, phone, capacity, capacity_used, verified_at
+        `;
         let data: any = null;
         const r1 = await supabase
           .from("centers")
-          .select(`
-            id, name, type, status, address, city, state,
-            lat, lng, phone, capacity, capacity_used, verified_at, needed_roles,
-            needs ( id, nombre, nivel, cantidad_aprox )
-          `)
+          .select(`${BASE}, needed_roles, needs ( id, nombre, nivel, cantidad_aprox )`)
           .eq("id", id)
           .single();
         if (!r1.error) {
@@ -312,10 +306,7 @@ export function useCenter(id: string | undefined) {
         } else {
           const r2 = await supabase
             .from("centers")
-            .select(`
-              id, name, type, status, address, city, state,
-              lat, lng, phone, capacity, capacity_used, verified_at, needed_roles
-            `)
+            .select(`${BASE}, needs ( id, nombre, nivel, cantidad_aprox )`)
             .eq("id", id)
             .single();
           if (!r2.error) {
@@ -323,10 +314,7 @@ export function useCenter(id: string | undefined) {
           } else {
             const r3 = await supabase
               .from("centers")
-              .select(`
-                id, name, type, status, address, city, state,
-                lat, lng, phone, capacity, capacity_used, verified_at
-              `)
+              .select(BASE)
               .eq("id", id)
               .single();
             if (r3.error) throw r3.error;

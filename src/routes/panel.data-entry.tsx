@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/panel/PanelLayout";
 import { ProfileFields } from "@/components/panel/ProfileFields";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
+import { Field, Select, TextInput } from "@/components/ui-vh/Field";
 
 export const Route = createFileRoute("/panel/data-entry")({
   head: () => ({ meta: [{ title: "Panel de carga · Venezuela Ayuda" }] }),
@@ -20,10 +22,29 @@ interface CenterRow {
   verified_at: string | null;
 }
 
+interface InventoryRow {
+  id: string;
+  center_id: string;
+  name: string;
+  category: string | null;
+  quantity: number;
+  unit: string;
+  status: string;
+}
+
+const INV_STATUS: Array<{ value: string; label: string }> = [
+  { value: "ok", label: "OK" },
+  { value: "bajo", label: "Bajo" },
+  { value: "critico", label: "Crítico" },
+];
+
 function DataEntryPanel() {
   const { profile, isVerified } = useProfile();
   const [centers, setCenters] = useState<CenterRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ID del centro cuyo inventario está desplegado (null = ninguno)
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.id || !isVerified) return;
@@ -40,7 +61,9 @@ function DataEntryPanel() {
       setCenters((data as CenterRow[]) ?? []);
       setLoading(false);
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [profile?.id, isVerified]);
 
   const pendingCount = centers.filter((c) => !c.verified_at).length;
@@ -78,52 +101,309 @@ function DataEntryPanel() {
             Aún no has cargado centros. Empieza con el botón de arriba.
           </div>
         ) : (
-          <div className="rounded-lg border-hair border-[var(--color-border)] overflow-hidden">
-            <table className="w-full text-[14px]">
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
-                  <th className="px-3 py-2 font-normal">Centro</th>
-                  <th className="px-3 py-2 font-normal">Tipo</th>
-                  <th className="px-3 py-2 font-normal">Ubicación</th>
-                  <th className="px-3 py-2 font-normal w-[160px]">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {centers.map((c, i) => (
-                  <tr key={c.id} className={i % 2 === 0 ? "bg-[var(--color-surface-alt)]" : ""}>
-                    <td className="px-3 py-2">
-                      <Link to="/centro/$id" params={{ id: c.id }} className="hover:underline">
-                        {c.name ?? "(sin nombre)"}
-                      </Link>
-                      <div className="text-[11px] font-mono text-[var(--color-text-muted)] mt-0.5">
-                        {new Date(c.created_at).toLocaleDateString("es-VE")}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-[13px]">{c.type ?? "—"}</td>
-                    <td className="px-3 py-2 text-[13px] text-[var(--color-text-muted)]">
-                      {[c.city, c.state].filter(Boolean).join(", ") || "—"}
-                    </td>
-                    <td className="px-3 py-2">
-                      {c.verified_at ? (
-                        <span className="text-[11px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair border-[var(--color-resolved)] text-[var(--color-resolved)]">
-                          Verificado
-                        </span>
-                      ) : (
-                        <span className="text-[11px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair border-[var(--color-caution)] text-[var(--color-caution)]">
-                          Pendiente
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="rounded-lg border-hair border-[var(--color-border)] overflow-hidden divide-y divide-[var(--color-border)]">
+            {centers.map((c) => (
+              <CenterAccordion
+                key={c.id}
+                center={c}
+                open={expandedId === c.id}
+                onToggle={() =>
+                  setExpandedId((prev) => (prev === c.id ? null : c.id))
+                }
+              />
+            ))}
           </div>
         )}
       </section>
     </PanelLayout>
   );
 }
+
+// ─── Acordeón por centro ──────────────────────────────────────────────────────
+
+interface CenterAccordionProps {
+  center: CenterRow;
+  open: boolean;
+  onToggle: () => void;
+}
+
+function CenterAccordion({ center, open, onToggle }: CenterAccordionProps) {
+  const [inventory, setInventory] = useState<InventoryRow[]>([]);
+  const [loadingInv, setLoadingInv] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [newItem, setNewItem] = useState({
+    name: "",
+    quantity: "",
+    unit: "unidades",
+    status: "ok",
+  });
+
+  // Cargar inventario la primera vez que se abre
+  useEffect(() => {
+    if (!open || loaded) return;
+    let active = true;
+    (async () => {
+      setLoadingInv(true);
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .select("id, center_id, name, category, quantity, unit, status")
+        .eq("center_id", center.id);
+      if (!active) return;
+      if (error) console.error(error);
+      setInventory((data as InventoryRow[]) ?? []);
+      setLoaded(true);
+      setLoadingInv(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [open, loaded, center.id]);
+
+  const addItem = async () => {
+    const qty = parseFloat(newItem.quantity);
+    const { data, error } = await supabase
+      .from("inventory_items")
+      .insert({
+        center_id: center.id,
+        name: newItem.name.trim() || null,
+        quantity: isNaN(qty) ? 0 : qty,
+        unit: newItem.unit?.trim() || null,
+        status: newItem.status || null,
+      })
+      .select("id, center_id, name, category, quantity, unit, status")
+      .single();
+    if (error) {
+      console.error(error);
+      toast.error(error.message || "No se pudo añadir el ítem");
+      return;
+    }
+    setInventory((xs) => [...xs, data as InventoryRow]);
+    setNewItem({ name: "", quantity: "", unit: "unidades", status: "ok" });
+    toast.success("Ítem añadido");
+  };
+
+  const updateItem = async (id: string, patch: Partial<InventoryRow>) => {
+    setInventory((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    const { error } = await supabase
+      .from("inventory_items")
+      .update(patch)
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      toast.error("No se pudo actualizar");
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    const prev = inventory;
+    setInventory((xs) => xs.filter((x) => x.id !== id));
+    const { error } = await supabase
+      .from("inventory_items")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      toast.error("No se pudo borrar");
+      setInventory(prev);
+    }
+  };
+
+  return (
+    <div>
+      {/* Fila del centro */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-4 px-3 py-3 text-left hover:bg-[var(--color-surface-alt)] transition-colors"
+      >
+        <div className="min-w-0">
+          <Link
+            to="/centro/$id"
+            params={{ id: center.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium text-[14px] hover:underline truncate block"
+          >
+            {center.name ?? "(sin nombre)"}
+          </Link>
+          <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+            {[center.type, center.city, center.state].filter(Boolean).join(" · ")}{" "}
+            — {new Date(center.created_at).toLocaleDateString("es-VE")}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {center.verified_at ? (
+            <span className="text-[11px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair border-[var(--color-resolved)] text-[var(--color-resolved)]">
+              Verificado
+            </span>
+          ) : (
+            <span className="text-[11px] uppercase tracking-label px-2 py-0.5 rounded-sm border-hair border-[var(--color-caution)] text-[var(--color-caution)]">
+              Pendiente
+            </span>
+          )}
+          <span
+            className="text-[var(--color-text-muted)] text-[11px] leading-none select-none"
+            aria-hidden
+          >
+            {open ? "▲" : "▼"}
+          </span>
+        </div>
+      </button>
+
+      {/* Panel de inventario desplegable */}
+      {open && (
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-5 space-y-4">
+          <h3 className="font-display font-semibold text-[15px]">
+            Inventario — {center.name ?? "este centro"}
+          </h3>
+
+          {loadingInv ? (
+            <p className="text-[13px] text-[var(--color-text-muted)]">Cargando inventario…</p>
+          ) : (
+            <>
+              <div className="rounded-lg border-hair border-[var(--color-border)] overflow-hidden">
+                <table className="w-full text-[14px]">
+                  <thead className="text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
+                    <tr className="text-left">
+                      <th className="px-3 py-2 font-normal">Ítem</th>
+                      <th className="px-3 py-2 font-normal w-[110px]">Cantidad</th>
+                      <th className="px-3 py-2 font-normal w-[110px]">Unidad</th>
+                      <th className="px-3 py-2 font-normal w-[130px]">Estado</th>
+                      <th className="px-3 py-2 font-normal w-[70px]"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventory.map((it, i) => (
+                      <tr
+                        key={it.id}
+                        className={i % 2 === 0 ? "bg-[var(--color-surface-alt)]" : ""}
+                      >
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full bg-transparent outline-none"
+                            defaultValue={it.name}
+                            onBlur={(e) =>
+                              e.target.value !== it.name &&
+                              updateItem(it.id, { name: e.target.value })
+                            }
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            className="w-full bg-transparent outline-none font-mono"
+                            defaultValue={it.quantity}
+                            onBlur={(e) =>
+                              Number(e.target.value) !== it.quantity &&
+                              updateItem(it.id, { quantity: Number(e.target.value) })
+                            }
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full bg-transparent outline-none"
+                            defaultValue={it.unit}
+                            onBlur={(e) =>
+                              e.target.value !== it.unit &&
+                              updateItem(it.id, { unit: e.target.value })
+                            }
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            className="bg-transparent outline-none text-[13px]"
+                            value={it.status}
+                            onChange={(e) =>
+                              updateItem(it.id, { status: e.target.value })
+                            }
+                          >
+                            {INV_STATUS.map((s) => (
+                              <option key={s.value} value={s.value}>
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => deleteItem(it.id)}
+                            className="text-[12px] text-[var(--color-critical)] hover:underline"
+                          >
+                            Borrar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {inventory.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-3 py-5 text-center text-[13px] text-[var(--color-text-muted)]"
+                        >
+                          Sin ítems aún. Añade el primero abajo.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Fila para añadir nuevo ítem */}
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px_110px_130px_auto] gap-3 items-end">
+                <Field label="Nuevo ítem">
+                  <TextInput
+                    placeholder="Agua potable"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  />
+                </Field>
+                <Field label="Cantidad">
+                  <TextInput
+                    type="number"
+                    min="0"
+                    value={newItem.quantity}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, quantity: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Unidad">
+                  <TextInput
+                    value={newItem.unit}
+                    onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                  />
+                </Field>
+                <Field label="Estado">
+                  <Select
+                    value={newItem.status}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, status: e.target.value })
+                    }
+                  >
+                    {INV_STATUS.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="h-10 px-4 rounded-md bg-[var(--color-text-main)] text-[var(--color-bg)] font-display font-semibold text-[13px]"
+                >
+                  Añadir
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (

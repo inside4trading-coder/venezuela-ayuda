@@ -7,27 +7,21 @@ import { KindBadge } from "@/components/ui-vh/KindBadge";
 import { CapacityBar } from "@/components/ui-vh/CapacityBar";
 import { Field, TextInput } from "@/components/ui-vh/Field";
 import {
-  CENTERS,
   type Center,
   type CenterKind,
   type NeedLevel,
 } from "@/data/mock";
 
 export const Route = createFileRoute("/centro/$id")({
-  head: ({ params }) => {
-    const c = CENTERS.find((x) => x.id === params.id);
-    return {
-      meta: [
-        { title: c ? `${c.nombre} · Venezuela Ayuda` : "Centro · Venezuela Ayuda" },
-        {
-          name: "description",
-          content: c
-            ? `Necesidades en tiempo real de ${c.nombre} en ${c.ciudad}, ${c.estadoVe}.`
-            : "Detalle de centro de coordinación humanitaria.",
-        },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: "Centro · Venezuela Ayuda" },
+      {
+        name: "description",
+        content: "Detalle de centro de coordinación humanitaria.",
+      },
+    ],
+  }),
   component: CenterDetail,
   notFoundComponent: () => (
     <div className="max-w-[640px] mx-auto p-10 text-center">

@@ -25,13 +25,14 @@ function CarrierPanel() {
   const [creating, setCreating] = useState(false);
 
   const createRoute = async () => {
-    if (!profile || !form.origin_label.trim() || !form.dest_label.trim()) return;
+    if (!profile) return;
     setCreating(true);
+    const blank = (s: string) => (s && s.trim() ? s.trim() : null);
     const { error } = await supabase.from("routes").insert({
       carrier_id: profile.id,
-      origin_label: form.origin_label.trim(),
-      dest_label: form.dest_label.trim(),
-      cargo_summary: form.cargo_summary.trim() || null,
+      origin_label: blank(form.origin_label),
+      dest_label: blank(form.dest_label),
+      cargo_summary: blank(form.cargo_summary),
       status: form.status,
     });
     setCreating(false);
@@ -100,7 +101,7 @@ function CarrierPanel() {
           <button
             type="button"
             onClick={createRoute}
-            disabled={creating || !form.origin_label.trim() || !form.dest_label.trim()}
+            disabled={creating}
             className="h-10 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] disabled:opacity-50"
           >
             {creating ? "Creando…" : "Registrar ruta"}

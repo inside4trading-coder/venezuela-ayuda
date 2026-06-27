@@ -187,16 +187,15 @@ function CenterPanel() {
   };
 
   const addItem = async () => {
-    if (!newItem.name.trim()) return;
     const qty = parseFloat(newItem.quantity);
     const { data, error } = await supabase
       .from("inventory_items")
       .insert({
         center_id: center.id,
-        name: newItem.name.trim(),
+        name: newItem.name.trim() || null,
         quantity: isNaN(qty) ? 0 : qty,
-        unit: newItem.unit || "unidades",
-        status: newItem.status,
+        unit: newItem.unit?.trim() || null,
+        status: newItem.status || null,
       })
       .select("id, center_id, name, category, quantity, unit, status")
       .single();
@@ -389,7 +388,6 @@ function CenterPanel() {
           <button
             type="button"
             onClick={addItem}
-            disabled={!newItem.name.trim()}
             className="h-10 px-4 rounded-md bg-[var(--color-text-main)] text-[var(--color-bg)] font-display font-semibold text-[13px] disabled:opacity-50"
           >
             Añadir

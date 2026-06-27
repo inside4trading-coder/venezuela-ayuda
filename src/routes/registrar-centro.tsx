@@ -82,27 +82,6 @@ const EMPTY: FormState = {
   otras: "",
 };
 
-const REQUIRED_BASE: (keyof FormState)[] = [
-  "nombre",
-  "kind",
-  "espacio",
-  "estadoVe",
-  "ciudad",
-  "direccion",
-  "coordinador",
-  "telefono",
-  "email",
-  "estado",
-];
-
-const REQUIRED_BY_KIND: Record<CenterKind, (keyof FormState)[]> = {
-  albergue: ["capacidadMax", "familiasActuales"],
-  acopio: ["m2Almacen", "vehiculosDisponibles"],
-  medico: ["medicosActivos"],
-  cocina: ["racionesCapacidad", "cocinerosActivos"],
-  distribucion: ["familiasRuta"],
-};
-
 function RegisterCenter() {
   const { user, isLoading: authLoading } = useAuth();
   const { profile, isAdmin, isLoading: profLoading, refresh: refreshProfile } = useProfile();
@@ -155,21 +134,7 @@ function RegisterCenter() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const next: typeof errors = {};
-    const required: (keyof FormState)[] = [
-      ...REQUIRED_BASE,
-      ...(form.kind ? REQUIRED_BY_KIND[form.kind] : []),
-    ];
-    required.forEach((k) => {
-      const v = form[k];
-      if (typeof v === "string" && !v.trim()) next[k] = "Este campo es requerido";
-      if (typeof v === "boolean" && v === false && k !== "tieneQuirofano") next[k] = "Requerido";
-    });
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      next.email = "Email no válido";
-    setErrors(next);
-    if (Object.keys(next).length > 0) return;
-
+    setErrors({});
     setSubmitting(true);
     try {
       // Mapear status del form al schema de Supabase
@@ -199,16 +164,17 @@ function RegisterCenter() {
       }
 
       // Insertar el centro (RLS exige created_by = uid y verified_at = null)
+      const blank = (s: string) => (s && s.trim() ? s.trim() : null);
       const { data: centerData, error: centerError } = await supabase
         .from("centers")
         .insert({
-          name: form.nombre,
-          type: form.kind,
-          status: statusMap[form.estado] ?? "activo",
-          address: form.direccion,
-          city: form.ciudad,
-          state: form.estadoVe,
-          phone: form.telefono,
+          name: blank(form.nombre),
+          type: form.kind || null,
+          status: form.estado ? (statusMap[form.estado] ?? "activo") : null,
+          address: blank(form.direccion),
+          city: blank(form.ciudad),
+          state: blank(form.estadoVe),
+          phone: blank(form.telefono),
           capacity,
           capacity_used,
           verified: false,

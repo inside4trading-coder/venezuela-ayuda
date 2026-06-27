@@ -49,13 +49,14 @@ function VolunteersPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const blank = (s: string) => (s && s.trim() ? s.trim() : null);
       const { error } = await supabase.from("volunteers").insert({
-        name: form.nombre,
-        phone: form.telefono,
-        state: form.estado,
-        city: form.ciudad,
-        availability: form.disponibilidad,
-        notes: form.notas,
+        name: blank(form.nombre),
+        phone: blank(form.telefono),
+        state: blank(form.estado),
+        city: blank(form.ciudad),
+        availability: blank(form.disponibilidad),
+        notes: blank(form.notas),
         roles: form.roles,
         status: "pending",
       });

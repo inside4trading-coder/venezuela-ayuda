@@ -9,6 +9,7 @@ import {
   NEED_CATALOG,
   type CenterKind,
 } from "@/data/mock";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/registrar-centro")({
   head: () => ({
@@ -36,7 +37,6 @@ interface FormState {
   coordinador: string;
   telefono: string;
   email: string;
-  // dinámicos
   capacidadMax: string;
   familiasActuales: string;
   m2Almacen: string;
@@ -47,7 +47,6 @@ interface FormState {
   cocinerosActivos: string;
   familiasRuta: string;
   zonasCubiertas: string;
-  // comunes
   estado: string;
   necesita: string[];
   tiene: string[];
@@ -104,6 +103,7 @@ const REQUIRED_BY_KIND: Record<CenterKind, (keyof FormState)[]> = {
 function RegisterCenter() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -114,7 +114,7 @@ function RegisterCenter() {
       [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v],
     }));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: typeof errors = {};
     const required: (keyof FormState)[] = [
@@ -130,8 +130,97 @@ function RegisterCenter() {
       next.email = "Email no válido";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    toast.success("Centro registrado — te contactamos en menos de 2 horas");
-    setForm(EMPTY);
+
+    setSubmitting(true);
+    try {
+      // Mapear status del form al schema de Supabase
+      const statusMap: Record<string, string> = {
+        urgente: "critico",
+        activo: "activo",
+        "capacidad-llena": "lleno",
+        cerrado: "inactivo",
+      };
+
+      // Calcular capacity y capacity_used según tipo
+      let capacity: number | null = null;
+      let capacity_used: number | null = null;
+
+      if (form.kind === "albergue") {
+        capacity = parseInt(form.capacidadMax) || null;
+        capacity_used = parseInt(form.familiasActuales) || null;
+      } else if (form.kind === "acopio") {
+        capacity = parseInt(form.m2Almacen) || null;
+        capacity_used = null;
+      } else if (form.kind === "medico") {
+        capacity_used = parseInt(form.medicosActivos) || null;
+      } else if (form.kind === "cocina") {
+        capacity = parseInt(form.racionesCapacidad) || null;
+      } else if (form.kind === "distribucion") {
+        capacity = parseInt(form.familiasRuta) || null;
+      }
+
+      // Insertar el centro
+      const { data: centerData, error: centerError } = await supabase
+        .from("centers")
+        .insert({
+          name: form.nombre,
+          type: form.kind,
+          status: statusMap[form.estado] ?? "activo",
+          address: form.direccion,
+          city: form.ciudad,
+          state: form.estadoVe,
+          phone: form.telefono,
+          capacity,
+          capacity_used,
+          verified: false,
+        })
+        .select("id")
+        .single();
+
+      if (centerError) throw centerError;
+
+      const centerId = centerData.id;
+
+      // Insertar necesidades
+      const needsToInsert = form.necesita.map((nombre) => ({
+        center_id: centerId,
+        nombre,
+        nivel: "medio" as const,
+        cantidad_aprox: "",
+      }));
+
+      // Agregar otras necesidades como texto libre
+      if (form.otras.trim()) {
+        needsToInsert.push({
+          center_id: centerId,
+          nombre: form.otras.trim(),
+          nivel: "medio" as const,
+          cantidad_aprox: "",
+        });
+      }
+
+      if (needsToInsert.length > 0) {
+        const { error: needsError } = await supabase
+          .from("needs")
+          .insert(needsToInsert);
+        if (needsError) console.warn("Error insertando necesidades:", needsError);
+      }
+
+      // Registrar en activity_log
+      await supabase.from("activity_log").insert({
+        center_id: centerId,
+        message: `Centro registrado: ${form.nombre}`,
+      });
+
+      toast.success("Centro registrado — te contactamos en menos de 2 horas");
+      setForm(EMPTY);
+      setErrors({});
+    } catch (err: any) {
+      console.error("Error registrando centro:", err);
+      toast.error("Hubo un problema al registrar el centro. Intenta de nuevo.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const kindMeta = form.kind ? KIND_BY_ID[form.kind] : null;
@@ -379,15 +468,13 @@ function RegisterCenter() {
         <div>
           <button
             type="submit"
-            className="w-full h-12 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[16px] hover:opacity-90"
+            disabled={submitting}
+            className="w-full h-12 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[16px] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Registrar centro
+            {submitting ? "Registrando…" : "Registrar centro"}
           </button>
           <p className="mt-3 text-[13px] text-[var(--color-text-muted)] text-center">
             Verificamos la información antes de publicarla. Te contactamos en menos de 2 horas.
-          </p>
-          <p className="mt-2 text-[12px] text-[var(--color-text-muted)] text-center italic">
-            Próximamente podrás crear tu cuenta y gestionar todo desde tu panel.
           </p>
         </div>
       </form>

@@ -6,6 +6,7 @@ import { useProfile, ROLE_LABEL, type ProfileRole } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { AddressLink } from "@/components/centers/AddressLink";
+import { CoordinatorPicker } from "@/components/admin/CoordinatorPicker";
 
 export const Route = createFileRoute("/panel/admin")({
   head: () => ({ meta: [{ title: "Panel admin · Venezuela Ayuda" }] }),
@@ -47,6 +48,7 @@ interface OrphanCenter {
 interface CandidateProfile {
   id: string;
   full_name: string | null;
+  email: string | null;
   role: ProfileRole;
   center_id: string | null;
 }
@@ -368,20 +370,11 @@ function AdminPanel() {
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0 items-center">
-                    <select
-                      className="text-[13px] bg-[var(--color-surface)] border-hair border-[var(--color-border)] px-2 py-2 rounded-md"
+                    <CoordinatorPicker
+                      candidates={candidates}
                       value={assignSelection[c.id] ?? ""}
-                      onChange={(e) => setAssignSelection((s) => ({ ...s, [c.id]: e.target.value }))}
-                      style={{ borderWidth: "0.5px" }}
-                    >
-                      <option value="">Asignar a…</option>
-                      {candidates.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.full_name ?? "(sin nombre)"} · {ROLE_LABEL[u.role] ?? u.role}
-                          {u.center_id ? " (ya coord.)" : ""}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setAssignSelection((s) => ({ ...s, [c.id]: id }))}
+                    />
                     <button
                       type="button"
                       onClick={() => assignCoordinator(c.id)}

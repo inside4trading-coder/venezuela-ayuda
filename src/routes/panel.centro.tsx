@@ -8,6 +8,11 @@ import { Field, Select, TextInput } from "@/components/ui-vh/Field";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { InventoryItemsTable } from "@/components/centers/InventoryItemsTable";
+import {
+  AddressAutocomplete,
+  type AddressPick,
+} from "@/components/centers/AddressAutocomplete";
+import { UseMyLocationButton } from "@/components/centers/UseMyLocationButton";
 import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import {
   useCenterApplications,
@@ -30,6 +35,8 @@ interface CenterRow {
   city: string | null;
   state: string | null;
   address: string | null;
+  lat: number | null;
+  lng: number | null;
   phone: string | null;
   capacity: number | null;
   capacity_used: number | null;
@@ -92,7 +99,7 @@ function CenterPanel() {
       const { data: c, error: ce } = await supabase
         .from("centers")
         .select(
-          "id, name, type, status, city, state, address, phone, capacity, capacity_used, needed_roles, verified_at"
+          "id, name, type, status, city, state, address, lat, lng, phone, capacity, capacity_used, needed_roles, verified_at"
         )
         .eq("id", centerId)
         .single();
@@ -177,6 +184,10 @@ function CenterPanel() {
         capacity_used: center.capacity_used,
         phone: center.phone,
         address: center.address,
+        city: center.city,
+        state: center.state,
+        lat: center.lat,
+        lng: center.lng,
         needed_roles: center.needed_roles ?? [],
       })
       .eq("id", center.id);
@@ -284,7 +295,57 @@ function CenterPanel() {
             <TextInput value={center.phone ?? ""} onChange={(e) => setCenter({ ...center, phone: e.target.value })} />
           </Field>
           <Field label="Dirección">
-            <TextInput value={center.address ?? ""} onChange={(e) => setCenter({ ...center, address: e.target.value })} />
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
+              <div className="flex-1 min-w-0">
+                <AddressAutocomplete
+                  value={center.address ?? ""}
+                  onChange={(v) =>
+                    setCenter((c) =>
+                      c && c.address === v
+                        ? c
+                        : c
+                          ? { ...c, address: v, lat: null, lng: null }
+                          : c,
+                    )
+                  }
+                  onSelect={(picked: AddressPick) =>
+                    setCenter((c) =>
+                      c
+                        ? {
+                            ...c,
+                            address: picked.direccion,
+                            city: picked.ciudad || c.city,
+                            state: picked.estado || c.state,
+                            lat: picked.lat,
+                            lng: picked.lng,
+                          }
+                        : c,
+                    )
+                  }
+                />
+              </div>
+              <UseMyLocationButton
+                onResolved={(picked: AddressPick) =>
+                  setCenter((c) =>
+                    c
+                      ? {
+                          ...c,
+                          address: picked.direccion || c.address,
+                          city: picked.ciudad || c.city,
+                          state: picked.estado || c.state,
+                          lat: picked.lat,
+                          lng: picked.lng,
+                        }
+                      : c,
+                  )
+                }
+              />
+            </div>
+            {center.lat != null && center.lng != null && (
+              <p className="mt-1 text-[11px] text-[var(--color-text-muted)] font-mono">
+                📍 {center.lat.toFixed(5)}, {center.lng.toFixed(5)}
+              </p>
+            )}
           </Field>
         </div>
         <div className="flex justify-end">

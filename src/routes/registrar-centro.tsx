@@ -6,6 +6,11 @@ import {
   InventoryItemsTable,
   type InventoryDraftItem,
 } from "@/components/centers/InventoryItemsTable";
+import {
+  AddressAutocomplete,
+  type AddressPick,
+} from "@/components/centers/AddressAutocomplete";
+import { UseMyLocationButton } from "@/components/centers/UseMyLocationButton";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import {
   CENTER_KINDS,
@@ -60,6 +65,8 @@ interface FormState {
   necesita: string[];
   tiene: string[];
   necesitaVoluntarios: string[];
+  lat: number | null;
+  lng: number | null;
 }
 
 const EMPTY: FormState = {
@@ -86,6 +93,8 @@ const EMPTY: FormState = {
   necesita: [],
   tiene: [],
   necesitaVoluntarios: [],
+  lat: null,
+  lng: null,
 };
 
 function RegisterCenter() {
@@ -139,6 +148,23 @@ function RegisterCenter() {
       [k]: f[k].includes(v) ? f[k].filter((x) => x !== v) : [...f[k], v],
     }));
 
+  const handleAddressPick = (picked: AddressPick) => {
+    setForm((f) => ({
+      ...f,
+      direccion: picked.direccion,
+      ciudad: picked.ciudad || f.ciudad,
+      estadoVe: picked.estado || f.estadoVe,
+      lat: picked.lat,
+      lng: picked.lng,
+    }));
+  };
+
+  const handleDireccionChange = (v: string) => {
+    setForm((f) =>
+      f.direccion === v ? f : { ...f, direccion: v, lat: null, lng: null },
+    );
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -181,6 +207,8 @@ function RegisterCenter() {
           address: blank(form.direccion),
           city: blank(form.ciudad),
           state: blank(form.estadoVe),
+          lat: form.lat,
+          lng: form.lng,
           phone: blank(form.telefono),
           capacity,
           capacity_used,
@@ -322,10 +350,22 @@ function RegisterCenter() {
             <TextInput value={form.ciudad} onChange={(e) => set("ciudad", e.target.value)} />
           </Field>
           <Field label="Dirección exacta" required error={errors.direccion}>
-            <TextInput
-              value={form.direccion}
-              onChange={(e) => set("direccion", e.target.value)}
-            />
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
+              <div className="flex-1 min-w-0">
+                <AddressAutocomplete
+                  value={form.direccion}
+                  onChange={handleDireccionChange}
+                  onSelect={handleAddressPick}
+                  placeholder="Empieza a escribir la dirección o nombre del lugar…"
+                />
+              </div>
+              <UseMyLocationButton onResolved={handleAddressPick} />
+            </div>
+            {form.lat != null && form.lng != null && (
+              <p className="mt-1 text-[11px] text-[var(--color-text-muted)] font-mono">
+                📍 {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+              </p>
+            )}
           </Field>
           <Field label="Coordinador" required error={errors.coordinador}>
             <TextInput

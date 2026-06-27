@@ -12,13 +12,14 @@ export interface LiveStats {
   rutasActivas: number;
   voluntarios: number;
   donaciones: number;
+  topNeeds: Array<{ nombre: string; count: number }>;
   lastUpdate: Date;
 }
 
 const REFRESH_MS = 60_000;
 
 async function fetchStats(): Promise<LiveStats> {
-  const [centers, inv, routes, vols, dons] = await Promise.all([
+  const [centers, inv, routes, vols, dons, needsRes] = await Promise.all([
     supabase
       .from("centers")
       .select("type, capacity_used")
@@ -30,6 +31,7 @@ async function fetchStats(): Promise<LiveStats> {
       .in("status", ["planned", "in_transit"]),
     supabase.from("volunteers").select("status", { count: "exact", head: true }),
     supabase.from("donations").select("status", { count: "exact", head: true }),
+    supabase.from("needs").select("nombre"),
   ]);
 
   const rows = (centers.data as Array<{ type: string | null; capacity_used: number | null }>) ?? [];
@@ -47,6 +49,19 @@ async function fetchStats(): Promise<LiveStats> {
   const items = ((inv.data as Array<{ quantity: number | null }>) ?? [])
     .reduce((acc, r) => acc + (r.quantity ?? 0), 0);
 
+  // Top 5 necesidades agregadas: contar ocurrencias por nombre.
+  const needsRows = (needsRes.data as Array<{ nombre: string | null }>) ?? [];
+  const counts = new Map<string, number>();
+  for (const r of needsRows) {
+    const key = (r.nombre ?? "").trim();
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const topNeeds = [...counts.entries()]
+    .map(([nombre, count]) => ({ nombre, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   return {
     ...byType,
     familiasEnAlbergues: familias,
@@ -54,6 +69,7 @@ async function fetchStats(): Promise<LiveStats> {
     rutasActivas: (routes.data ?? []).length,
     voluntarios: vols.count ?? 0,
     donaciones: dons.count ?? 0,
+    topNeeds,
     lastUpdate: new Date(),
   };
 }
@@ -110,6 +126,14 @@ export function statsToTickerItems(s: LiveStats): string[] {
     );
   if (s.voluntarios > 0) items.push(`${fmt(s.voluntarios)} voluntarios`);
   if (s.donaciones > 0) items.push(`${fmt(s.donaciones)} donaciones registradas`);
+
+  if (s.topNeeds.length > 0) {
+    // Línea individual por cada necesidad top, con el contador de centros que la piden
+    for (const n of s.topNeeds) {
+      const label = n.nombre.length > 40 ? n.nombre.slice(0, 37) + "…" : n.nombre;
+      items.push(`Necesita: ${label} (${n.count})`);
+    }
+  }
 
   const mins = Math.max(0, Math.round((Date.now() - s.lastUpdate.getTime()) / 60_000));
   items.push(

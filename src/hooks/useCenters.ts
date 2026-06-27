@@ -142,17 +142,28 @@ async function fetchAll(): Promise<Center[]> {
 
   _promise = (async () => {
     try {
-      const { data, error } = await supabase.from("centers").select(`
+      // Intentamos con el embed de needs. Si no hay FK declarada,
+      // PostgREST falla; en ese caso reintentamos sin el embed.
+      let { data, error } = await supabase.from("centers").select(`
           id, name, type, status, address, city, state,
           lat, lng, phone, capacity, capacity_used, verified_at,
           needs ( id, nombre, nivel, cantidad_aprox )
         `);
 
-      if (error) throw error;
+      if (error) {
+        console.warn("centers select with needs embed failed:", error.message);
+        const retry = await supabase.from("centers").select(`
+          id, name, type, status, address, city, state,
+          lat, lng, phone, capacity, capacity_used, verified_at
+        `);
+        if (retry.error) throw retry.error;
+        data = retry.data;
+      }
       _cache = (data ?? []).map(mapRow);
       return _cache;
     } catch (err) {
       _promise = null;
+      console.error("centers fetch failed:", err);
       throw err;
     }
   })();

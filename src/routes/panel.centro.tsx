@@ -311,6 +311,15 @@ function CenterPanel() {
         <p className="text-[12px] text-[var(--color-text-muted)] -mt-1">
           Los perfiles marcados verán este centro como sugerencia y podrán postularse.
         </p>
+        {(center.needed_roles ?? []).length === 0 && (
+          <div
+            className="rounded-md border-hair border-[var(--color-caution)] bg-[var(--color-surface)] p-3 text-[12px]"
+            style={{ borderLeftWidth: "3px" }}
+          >
+            Sin roles marcados, tu centro <strong>no aparece</strong> en el marketplace de voluntarios.
+            Marca al menos uno abajo y pulsa "Guardar cambios" arriba.
+          </div>
+        )}
         <CheckGrid
           options={VOLUNTEER_ROLES}
           selected={center.needed_roles ?? []}

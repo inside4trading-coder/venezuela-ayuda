@@ -79,7 +79,7 @@ export function VolunteerCard({
         </div>
       </div>
 
-      {volunteer.skills.length > 0 && (
+      {volunteer.skills.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {volunteer.skills.map((s) => {
             const matched = highlightSkills.includes(s);
@@ -97,6 +97,17 @@ export function VolunteerCard({
             );
           })}
         </div>
+      ) : (
+        <span
+          className="self-start text-[10px] uppercase tracking-label px-1.5 py-0.5 rounded-sm border-hair italic"
+          style={{
+            color: "var(--color-text-muted)",
+            borderColor: "var(--color-border)",
+            opacity: 0.7,
+          }}
+        >
+          Skills no especificados
+        </span>
       )}
 
       {viewerRole === "coordinador" && centerIdForInvite && !isSelf && (

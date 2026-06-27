@@ -40,11 +40,15 @@ export function useAvailableVolunteers(filters: MarketFilters = {}) {
         console.error("useAvailableVolunteers:", error);
         setItems([]);
       } else {
-        let rows = ((data as unknown) as PublicVolunteer[]) ?? [];
-        rows = rows.filter(
-          (r) => Array.isArray(r.skills) && r.skills.length > 0,
-        );
+        // Normalizamos skills a [] si viene null y mostramos a todos los
+        // voluntarios — los que no tienen skills aparecen con etiqueta
+        // "Skills no especificados" en la card.
+        let rows = (((data as unknown) as PublicVolunteer[]) ?? []).map((r) => ({
+          ...r,
+          skills: Array.isArray(r.skills) ? r.skills : [],
+        }));
         if (filters.skills && filters.skills.length > 0) {
+          // El filtro sí descarta voluntarios sin skills (no pueden matchear)
           rows = rows.filter((r) =>
             filters.skills!.some((s) => r.skills.includes(s)),
           );

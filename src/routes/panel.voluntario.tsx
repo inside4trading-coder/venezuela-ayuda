@@ -101,6 +101,19 @@ function VolunteerPanel() {
       }
       subtitle="Centros que necesitan tu perfil + tus postulaciones."
     >
+      {profile && (profile.skills ?? []).length === 0 && (
+        <div
+          className="rounded-lg border-hair border-[var(--color-caution)] bg-[var(--color-surface)] p-4 text-[13px]"
+          style={{ borderLeftWidth: "3px" }}
+        >
+          <p className="font-medium mb-1">Completa tus habilidades</p>
+          <p className="text-[var(--color-text-muted)]">
+            Sin habilidades marcadas no apareces destacado en el marketplace ni los centros pueden invitarte por match.
+            Edita tu perfil abajo y selecciona los roles en los que puedes ayudar.
+          </p>
+        </div>
+      )}
+
       {profile && <ProfileFields profile={profile} />}
 
       <section className="space-y-3">

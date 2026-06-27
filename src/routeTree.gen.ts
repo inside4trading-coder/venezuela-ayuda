@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VoluntariosRouteImport } from './routes/voluntarios'
 import { Route as RegistrarCentroRouteImport } from './routes/registrar-centro'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NecesidadesRouteImport } from './routes/necesidades'
 import { Route as MarcaRouteImport } from './routes/marca'
 import { Route as ImpactoRouteImport } from './routes/impacto'
 import { Route as CentrosRouteImport } from './routes/centros'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PanelCentroRouteImport } from './routes/panel.centro'
+import { Route as PanelAdminRouteImport } from './routes/panel.admin'
 import { Route as CentroIdRouteImport } from './routes/centro.$id'
 
 const VoluntariosRoute = VoluntariosRouteImport.update({
@@ -26,6 +29,11 @@ const VoluntariosRoute = VoluntariosRouteImport.update({
 const RegistrarCentroRoute = RegistrarCentroRouteImport.update({
   id: '/registrar-centro',
   path: '/registrar-centro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NecesidadesRoute = NecesidadesRouteImport.update({
@@ -53,6 +61,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelCentroRoute = PanelCentroRouteImport.update({
+  id: '/panel/centro',
+  path: '/panel/centro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelAdminRoute = PanelAdminRouteImport.update({
+  id: '/panel/admin',
+  path: '/panel/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CentroIdRoute = CentroIdRouteImport.update({
   id: '/centro/$id',
   path: '/centro/$id',
@@ -65,9 +83,12 @@ export interface FileRoutesByFullPath {
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
+  '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
+  '/panel/admin': typeof PanelAdminRoute
+  '/panel/centro': typeof PanelCentroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,9 +96,12 @@ export interface FileRoutesByTo {
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
+  '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
+  '/panel/admin': typeof PanelAdminRoute
+  '/panel/centro': typeof PanelCentroRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,9 +110,12 @@ export interface FileRoutesById {
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
+  '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
+  '/panel/admin': typeof PanelAdminRoute
+  '/panel/centro': typeof PanelCentroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,9 +125,12 @@ export interface FileRouteTypes {
     | '/impacto'
     | '/marca'
     | '/necesidades'
+    | '/onboarding'
     | '/registrar-centro'
     | '/voluntarios'
     | '/centro/$id'
+    | '/panel/admin'
+    | '/panel/centro'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -108,9 +138,12 @@ export interface FileRouteTypes {
     | '/impacto'
     | '/marca'
     | '/necesidades'
+    | '/onboarding'
     | '/registrar-centro'
     | '/voluntarios'
     | '/centro/$id'
+    | '/panel/admin'
+    | '/panel/centro'
   id:
     | '__root__'
     | '/'
@@ -118,9 +151,12 @@ export interface FileRouteTypes {
     | '/impacto'
     | '/marca'
     | '/necesidades'
+    | '/onboarding'
     | '/registrar-centro'
     | '/voluntarios'
     | '/centro/$id'
+    | '/panel/admin'
+    | '/panel/centro'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,9 +165,12 @@ export interface RootRouteChildren {
   ImpactoRoute: typeof ImpactoRoute
   MarcaRoute: typeof MarcaRoute
   NecesidadesRoute: typeof NecesidadesRoute
+  OnboardingRoute: typeof OnboardingRoute
   RegistrarCentroRoute: typeof RegistrarCentroRoute
   VoluntariosRoute: typeof VoluntariosRoute
   CentroIdRoute: typeof CentroIdRoute
+  PanelAdminRoute: typeof PanelAdminRoute
+  PanelCentroRoute: typeof PanelCentroRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -148,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/registrar-centro'
       fullPath: '/registrar-centro'
       preLoaderRoute: typeof RegistrarCentroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/necesidades': {
@@ -185,6 +231,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel/centro': {
+      id: '/panel/centro'
+      path: '/panel/centro'
+      fullPath: '/panel/centro'
+      preLoaderRoute: typeof PanelCentroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel/admin': {
+      id: '/panel/admin'
+      path: '/panel/admin'
+      fullPath: '/panel/admin'
+      preLoaderRoute: typeof PanelAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/centro/$id': {
       id: '/centro/$id'
       path: '/centro/$id'
@@ -201,9 +261,12 @@ const rootRouteChildren: RootRouteChildren = {
   ImpactoRoute: ImpactoRoute,
   MarcaRoute: MarcaRoute,
   NecesidadesRoute: NecesidadesRoute,
+  OnboardingRoute: OnboardingRoute,
   RegistrarCentroRoute: RegistrarCentroRoute,
   VoluntariosRoute: VoluntariosRoute,
   CentroIdRoute: CentroIdRoute,
+  PanelAdminRoute: PanelAdminRoute,
+  PanelCentroRoute: PanelCentroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

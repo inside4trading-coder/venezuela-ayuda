@@ -2,6 +2,7 @@
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { useProfile } from "@/hooks/useProfile";
 
 const LINKS = [
   { to: "/", label: "Inicio" },
@@ -28,6 +29,7 @@ function PulseLogo() {
 export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const { isAdmin, isCoordinator } = useProfile();
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
@@ -65,13 +67,33 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <AuthButton />
-          <Link
-            to="/registrar-centro"
-            className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"
-            style={{ borderWidth: "0.5px" }}
-          >
-            Registrar centro
-          </Link>
+          {isCoordinator && (
+            <Link
+              to="/panel/centro"
+              className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"
+              style={{ borderWidth: "0.5px" }}
+            >
+              Mi centro
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              to="/panel/admin"
+              className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] hover:bg-[var(--color-surface-alt)]"
+              style={{ borderWidth: "0.5px" }}
+            >
+              Admin
+            </Link>
+          )}
+          {!isCoordinator && !isAdmin && (
+            <Link
+              to="/registrar-centro"
+              className="text-[14px] px-3 py-2 rounded-md border-hair border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)]"
+              style={{ borderWidth: "0.5px" }}
+            >
+              Registrar centro
+            </Link>
+          )}
           <Link
             to="/impacto"
             className="text-[14px] px-3 py-2 rounded-md bg-[var(--color-critical)] text-white hover:opacity-90"

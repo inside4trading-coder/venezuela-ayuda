@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
@@ -10,6 +10,9 @@ import {
   type CenterKind,
 } from "@/data/mock";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { AuthButton } from "@/components/auth/AuthButton";
 
 export const Route = createFileRoute("/registrar-centro")({
   head: () => ({
@@ -101,9 +104,45 @@ const REQUIRED_BY_KIND: Record<CenterKind, (keyof FormState)[]> = {
 };
 
 function RegisterCenter() {
+  const { user, isLoading: authLoading } = useAuth();
+  const { profile, isAdmin, isLoading: profLoading, refresh: refreshProfile } = useProfile();
+  const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  if (authLoading || profLoading) {
+    return <Gate>Cargando…</Gate>;
+  }
+
+  if (!user) {
+    return (
+      <Gate>
+        <h1 className="font-display text-[22px] mb-2">Inicia sesión para registrar tu centro</h1>
+        <p className="text-[13px] text-[var(--color-text-muted)] mb-5">
+          Necesitamos saber quién coordina el centro. Entra con Google y continúa.
+        </p>
+        <div className="flex justify-center"><AuthButton /></div>
+      </Gate>
+    );
+  }
+
+  if (profile?.role === "pending") {
+    return (
+      <Gate>
+        <h1 className="font-display text-[22px] mb-2">Elige primero tu rol</h1>
+        <p className="text-[13px] text-[var(--color-text-muted)] mb-5">
+          Necesitamos saber cómo vas a participar en la plataforma.
+        </p>
+        <Link
+          to="/onboarding"
+          className="inline-block h-11 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] leading-[44px]"
+        >
+          Ir a elegir rol
+        </Link>
+      </Gate>
+    );
+  }
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -159,7 +198,7 @@ function RegisterCenter() {
         capacity = parseInt(form.familiasRuta) || null;
       }
 
-      // Insertar el centro
+      // Insertar el centro (RLS exige created_by = uid y verified_at = null)
       const { data: centerData, error: centerError } = await supabase
         .from("centers")
         .insert({
@@ -173,6 +212,8 @@ function RegisterCenter() {
           capacity,
           capacity_used,
           verified: false,
+          verified_at: null,
+          created_by: user.id,
         })
         .select("id")
         .single();
@@ -180,6 +221,17 @@ function RegisterCenter() {
       if (centerError) throw centerError;
 
       const centerId = centerData.id;
+
+      // Si el usuario no es admin, lo vinculamos como coordinador de este centro.
+      // El admin puede crear centros sin auto-asignarse.
+      if (!isAdmin) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ role: "coordinador", center_id: centerId })
+          .eq("id", user.id);
+        if (profileError) console.warn("No se pudo vincular coordinador:", profileError);
+        else await refreshProfile();
+      }
 
       // Insertar necesidades
       const needsToInsert = form.necesita.map((nombre) => ({
@@ -212,9 +264,10 @@ function RegisterCenter() {
         message: `Centro registrado: ${form.nombre}`,
       });
 
-      toast.success("Centro registrado — te contactamos en menos de 2 horas");
+      toast.success("Centro registrado — un admin lo revisará en menos de 2 horas");
       setForm(EMPTY);
       setErrors({});
+      if (!isAdmin) navigate({ to: "/panel/centro" });
     } catch (err: any) {
       console.error("Error registrando centro:", err);
       toast.error("Hubo un problema al registrar el centro. Intenta de nuevo.");
@@ -479,6 +532,12 @@ function RegisterCenter() {
         </div>
       </form>
     </div>
+  );
+}
+
+function Gate({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="max-w-[520px] mx-auto px-4 py-16 text-center">{children}</div>
   );
 }
 

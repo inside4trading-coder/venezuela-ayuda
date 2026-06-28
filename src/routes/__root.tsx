@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Analytics } from '@vercel/analytics/react';
 import {
   Outlet,
   Link,
@@ -82,6 +83,7 @@ function RootComponent() {
       <Navbar />
       <div style={{ paddingTop: "88px" }}>
         <Outlet />
+        <Analytics />
       </div>
       <Toaster
         position="bottom-right"

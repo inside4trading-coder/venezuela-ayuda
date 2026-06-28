@@ -27,18 +27,29 @@ export function ImpactStrip() {
 
         <dl className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-px bg-[var(--color-border)] border-hair border-[var(--color-border)] rounded-lg overflow-hidden">
           {[
-            { l: "Centros activos", v: metrics.centrosActivos },
-            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE") },
-            { l: "Voluntarios", v: metrics.voluntarios },
+            { l: "Centros activos", v: metrics.centrosActivos, to: "/centros" },
+            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE"), to: "/necesidades" },
+            { l: "Sobrevivientes", v: metrics.sobrevivientes, to: "/rescatados" },
             { l: "Estados cubiertos", v: metrics.estados },
-          ].map((m) => (
-            <div key={m.l} className="bg-[var(--color-surface)] p-5">
-              <dt className="font-mono text-[10px] uppercase tracking-label text-[var(--color-text-muted)]">
-                {m.l}
-              </dt>
-              <dd className="font-display text-[28px] font-semibold mt-1">{m.v}</dd>
-            </div>
-          ))}
+          ].map((m) => {
+            const content = (
+              <>
+                <dt className="font-mono text-[10px] uppercase tracking-label text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)] transition-colors">
+                  {m.l}
+                </dt>
+                <dd className="font-display text-[28px] font-semibold mt-1">{m.v}</dd>
+              </>
+            );
+            return m.to ? (
+              <Link key={m.l} to={m.to} className="bg-[var(--color-surface)] p-5 block group">
+                {content}
+              </Link>
+            ) : (
+              <div key={m.l} className="bg-[var(--color-surface)] p-5">
+                {content}
+              </div>
+            );
+          })}
         </dl>
 
         <div className="mt-8">

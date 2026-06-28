@@ -32,18 +32,29 @@ export function Hero() {
 
         <dl className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 border-t border-hair border-[var(--color-border)] pt-6">
           {[
-            { l: "Centros activos", v: metrics.centrosActivos },
-            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE") },
-            { l: "Voluntarios", v: metrics.voluntarios },
+            { l: "Centros activos", v: metrics.centrosActivos, to: "/centros" },
+            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE"), to: "/necesidades" },
+            { l: "Sobrevivientes", v: metrics.sobrevivientes, to: "/rescatados" },
             { l: "Estados cubiertos", v: metrics.estados },
-          ].map((m) => (
-            <div key={m.l}>
-              <dt className="font-mono text-[10px] uppercase tracking-label text-[var(--color-text-muted)]">
-                {m.l}
-              </dt>
-              <dd className="font-display text-[24px] font-semibold mt-1">{m.v}</dd>
-            </div>
-          ))}
+          ].map((m) => {
+            const content = (
+              <>
+                <dt className="font-mono text-[10px] uppercase tracking-label text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)] transition-colors">
+                  {m.l}
+                </dt>
+                <dd className="font-display text-[24px] font-semibold mt-1">{m.v}</dd>
+              </>
+            );
+            return m.to ? (
+              <Link key={m.l} to={m.to} className="block group">
+                {content}
+              </Link>
+            ) : (
+              <div key={m.l}>
+                {content}
+              </div>
+            );
+          })}
         </dl>
       </div>
     </section>

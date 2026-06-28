@@ -18,6 +18,7 @@ export interface ImpactMetrics {
   centrosActivos: number;
   necesidadesActivas: number;
   voluntarios: number;
+  sobrevivientes: number;
   estados: number;
   porTipo: Record<
     CenterKind,
@@ -29,6 +30,7 @@ const EMPTY_METRICS: ImpactMetrics = {
   centrosActivos: 0,
   necesidadesActivas: 0,
   voluntarios: 0,
+  sobrevivientes: 0,
   estados: 0,
   porTipo: {
     albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
@@ -82,6 +84,11 @@ export function useImpact() {
           .from("profiles")
           .select("id", { count: "exact", head: true })
           .in("role", ["voluntario", "voluntario_medico"]);
+
+        const { count: survivorsCount } = await supabase
+          .from("survivors")
+          .select("*", { count: "exact", head: true })
+          .eq("verified", true);
 
         // Solo needs estándar para la vista agregada de /necesidades.
         // Los ítems de texto libre siguen visible en el detalle de cada centro.
@@ -160,6 +167,7 @@ export function useImpact() {
           centrosActivos: centersArr.length,
           necesidadesActivas: needsData?.length ?? 0,
           voluntarios: voluntariosCount ?? 0,
+          sobrevivientes: survivorsCount ?? 0,
           estados: estadosUnicos,
           porTipo,
         });

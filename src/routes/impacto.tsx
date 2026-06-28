@@ -46,7 +46,7 @@ function ImpactPage() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
         <Metric n={metrics.centrosActivos} l="centros activos" />
         <Metric n={metrics.necesidadesActivas.toLocaleString("es-VE")} l="necesidades activas" />
-        <Metric n={metrics.voluntarios} l="voluntarios" />
+        <Metric n={metrics.sobrevivientes.toLocaleString("es-VE")} l="sobrevivientes registrados por la red" />
         <Metric n={metrics.estados} l="estados cubiertos" />
       </section>
 

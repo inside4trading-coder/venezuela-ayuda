@@ -13,13 +13,14 @@ export interface LiveStats {
   voluntarios: number;
   donaciones: number;
   topNeeds: Array<{ nombre: string; count: number }>;
+  survivors?: Array<{ full_name: string; location_name: string | null; estado_fisico: string }>;
   lastUpdate: Date;
 }
 
 const REFRESH_MS = 60_000;
 
 async function fetchStats(): Promise<LiveStats> {
-  const [centers, inv, routes, vols, dons, needsRes] = await Promise.all([
+  const [centers, inv, routes, vols, dons, needsRes, survivorsRes] = await Promise.all([
     supabase
       .from("centers")
       .select("type, capacity_used")
@@ -36,8 +37,15 @@ async function fetchStats(): Promise<LiveStats> {
       .in("role", ["voluntario", "voluntario_medico"]),
     supabase.from("donations").select("status", { count: "exact", head: true }),
     supabase.from("needs").select("nombre").not("nombre", "is", null),
+    supabase
+      .from("survivors")
+      .select("full_name, location_name, estado_fisico")
+      .eq("verified", true)
+      .limit(20)
+      .order("created_at", { ascending: false }),
   ]);
   if (needsRes.error) console.warn("useLiveStats needs error:", needsRes.error);
+  if (survivorsRes.error) console.warn("useLiveStats survivors error:", survivorsRes.error);
 
   const rows = (centers.data as Array<{ type: string | null; capacity_used: number | null }>) ?? [];
   const byType = {
@@ -72,6 +80,8 @@ async function fetchStats(): Promise<LiveStats> {
     topNeeds,
   });
 
+  const survivorsRows = (survivorsRes.data as Array<{ full_name: string; location_name: string | null; estado_fisico: string }>) ?? [];
+
   return {
     ...byType,
     familiasEnAlbergues: familias,
@@ -80,6 +90,7 @@ async function fetchStats(): Promise<LiveStats> {
     voluntarios: vols.count ?? 0,
     donaciones: dons.count ?? 0,
     topNeeds,
+    survivors: survivorsRows,
     lastUpdate: new Date(),
   };
 }
@@ -137,12 +148,33 @@ export function statsToTickerItems(s: LiveStats): string[] {
   if (s.voluntarios > 0) items.push(`${fmt(s.voluntarios)} voluntarios`);
   if (s.donaciones > 0) items.push(`${fmt(s.donaciones)} donaciones registradas`);
 
+  const needItems: string[] = [];
   if (s.topNeeds.length > 0) {
     for (const n of s.topNeeds) {
       const label = n.nombre.length > 40 ? n.nombre.slice(0, 37) + "…" : n.nombre;
-      items.push(`Necesita: ${label} (${n.count})`);
+      needItems.push(`Necesita: ${label} (${n.count})`);
     }
   }
+
+  const survivorItems: string[] = (s.survivors ?? []).map((surv) => {
+    const isCritical = surv.estado_fisico === "herido_grave" || surv.estado_fisico === "critico";
+    const prefix = isCritical ? "🔴 " : "";
+    const loc = surv.location_name ? surv.location_name.trim() : "Desconocida";
+    return `${prefix}Sobreviviente: ${surv.full_name.trim()} · ${loc}`;
+  });
+
+  const mixedItems: string[] = [];
+  const maxLength = Math.max(needItems.length, survivorItems.length);
+  for (let i = 0; i < maxLength; i++) {
+    if (i < needItems.length) {
+      mixedItems.push(needItems[i]);
+    }
+    if (i < survivorItems.length) {
+      mixedItems.push(survivorItems[i]);
+    }
+  }
+
+  items.push(...mixedItems);
 
   const mins = Math.max(0, Math.round((Date.now() - s.lastUpdate.getTime()) / 60_000));
   items.push(

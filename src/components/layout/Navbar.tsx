@@ -1,12 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { useProfile, ROLE_PANEL_PATH } from "@/hooks/useProfile";
+import { supabase } from "@/lib/supabase";
 
 const LINKS = [
   { to: "/", label: "Inicio" },
   { to: "/centros", label: "Centros" },
+  { to: "/rescatados", label: "Rescatados" },
   { to: "/necesidades", label: "Necesidades" },
   { to: "/voluntarios", label: "Voluntarios" },
   { to: "/impacto", label: "Impacto" },
@@ -33,6 +35,48 @@ export function Navbar() {
   const panelPath = profile && profile.role !== "pending" ? ROLE_PANEL_PATH[profile.role] : null;
   const showRegisterCenter = !isCoordinator && !isAdmin;
 
+  const [badgeCount, setBadgeCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from("rescued_persons")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "activo")
+          .is("assigned_center", null);
+
+        if (error) {
+          console.error("Error fetching rescued count for badge:", error);
+        } else if (active) {
+          setBadgeCount(count ?? 0);
+        }
+      } catch (err) {
+        console.error("Error in rescued count fetch:", err);
+      }
+    };
+
+    fetchCount();
+
+    const channel = supabase
+      .channel("navbar-rescued-rt")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rescued_persons" },
+        () => {
+          fetchCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
   return (
@@ -56,13 +100,16 @@ export function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className={`text-[14px] py-2 ${
+                className={`text-[14px] py-2 flex items-center gap-1.5 ${
                   active
                     ? "text-[var(--color-text-main)] border-b-2 border-[var(--color-critical)]"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                 }`}
               >
-                {l.label}
+                <span>{l.label}</span>
+                {l.to === "/rescatados" && badgeCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-[var(--color-critical)] vh-pulse-dot" title="Casos activos sin asignar" />
+                )}
               </Link>
             );
           })}
@@ -132,11 +179,14 @@ export function Navbar() {
               key={l.to}
               to={l.to}
               onClick={() => setOpen(false)}
-              className={`text-[14px] py-2 ${
+              className={`text-[14px] py-2 flex items-center justify-between ${
                 isActive(l.to) ? "text-[var(--color-critical)]" : "text-[var(--color-text-main)]"
               }`}
             >
-              {l.label}
+              <span>{l.label}</span>
+              {l.to === "/rescatados" && badgeCount > 0 && (
+                <span className="w-2 h-2 rounded-full bg-[var(--color-critical)] vh-pulse-dot mr-2" />
+              )}
             </Link>
           ))}
 

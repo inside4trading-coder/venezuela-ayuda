@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Building2,
@@ -16,6 +16,7 @@ import { useProfile, type ProfileRole, ROLE_PANEL_PATH, ROLE_LABEL } from "@/hoo
 import { supabase } from "@/lib/supabase";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
+import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
 import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
 
@@ -105,6 +106,15 @@ function Onboarding() {
   const [vskills, setVskills] = useState<string[]>([]);
   const [vstate, setVstate] = useState("");
   const [vcity, setVcity] = useState("");
+  const [docTipo, setDocTipo] = useState<"cedula" | "pasaporte">("cedula");
+  const [docNumero, setDocNumero] = useState("");
+
+  useEffect(() => {
+    if (profile) {
+      if (profile.documento_tipo) setDocTipo(profile.documento_tipo);
+      if (profile.documento_numero) setDocNumero(profile.documento_numero);
+    }
+  }, [profile]);
 
   const toggleSkill = (s: string) =>
     setVskills((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
@@ -196,7 +206,10 @@ function Onboarding() {
     setSubmitting(true);
     try {
       // Solo actualizamos lo que el user marcó (no obligatorios)
-      const patch: Record<string, unknown> = {};
+      const patch: Record<string, unknown> = {
+        documento_tipo: docTipo,
+        documento_numero: docNumero.trim() || null,
+      };
       if (vskills.length > 0) patch.skills = vskills;
       if (vstate.trim()) patch.state = vstate.trim();
       if (vcity.trim()) patch.city = vcity.trim();
@@ -237,6 +250,12 @@ function Onboarding() {
         </header>
 
         <section className="space-y-4">
+          <DocumentoIdentidad
+            documentoTipo={docTipo}
+            documentoNumero={docNumero}
+            onTipoChange={setDocTipo}
+            onNumeroChange={setDocNumero}
+          />
           <div>
             <div className="block mb-2 text-[13px]">¿En qué puedes ayudar?</div>
             <CheckGrid

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/supabase";
+import { ProfileFields } from "@/components/panel/ProfileFields";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { AuthButton } from "@/components/auth/AuthButton";
@@ -80,7 +81,7 @@ const KIND_HINTS: Record<string, string> = {
 
 function CenterPanel() {
   const { user, isLoading: authLoading } = useAuth();
-  const { profile, isLoading: profLoading, isCoordinator, isAdmin } = useProfile();
+  const { profile, isLoading: profLoading, isCoordinator, isAdmin, refresh } = useProfile();
   const [center, setCenter] = useState<CenterRow | null>(null);
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [loadingCenter, setLoadingCenter] = useState(true);
@@ -416,6 +417,12 @@ function CenterPanel() {
           onDelete={deleteItem}
         />
       </section>
+
+      {profile && (
+        <div className="border-t border-[var(--color-border)] pt-8">
+          <ProfileFields profile={profile} onSaved={refresh} />
+        </div>
+      )}
     </div>
   );
 }

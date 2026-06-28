@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
+import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import type { Profile, ProfileRole } from "@/hooks/useProfile";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
@@ -56,6 +57,15 @@ export function ProfileFields({ profile, onSaved }: Props) {
         <Field label="Teléfono">
           <TextInput value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="+58…" />
         </Field>
+
+        <div className="sm:col-span-2">
+          <DocumentoIdentidad
+            documentoTipo={form.documento_tipo ?? "cedula"}
+            documentoNumero={form.documento_numero ?? ""}
+            onTipoChange={(tipo) => set("documento_tipo", tipo)}
+            onNumeroChange={(num) => set("documento_numero", num)}
+          />
+        </div>
 
         {needsLocation(profile.role) && (
           <>
@@ -200,6 +210,8 @@ function buildPatch(form: Profile, role: ProfileRole): Partial<Profile> {
     full_name: form.full_name,
     phone: form.phone,
     bio: form.bio,
+    documento_tipo: form.documento_tipo ?? "cedula",
+    documento_numero: form.documento_numero || null,
   };
   if (needsLocation(role)) {
     base.state = form.state;

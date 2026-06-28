@@ -37,10 +37,12 @@ export interface Profile {
   verified_at: string | null;
   verification_note: string | null;
   bio: string | null;
+  documento_tipo?: "cedula" | "pasaporte";
+  documento_numero?: string | null;
 }
 
 const SELECT_COLS =
-  "id, role, center_id, full_name, phone, state, city, organization, avatar_url, company_name, tax_id, country, vehicle_type, vehicle_capacity_kg, license_plate, skills, zones, verified_at, verification_note, bio";
+  "id, role, center_id, full_name, phone, state, city, organization, avatar_url, company_name, tax_id, country, vehicle_type, vehicle_capacity_kg, license_plate, skills, zones, verified_at, verification_note, bio, documento_tipo, documento_numero";
 
 const REQUIRES_VERIFICATION: ProfileRole[] = ["voluntario_medico", "autoridad", "data_entry"];
 

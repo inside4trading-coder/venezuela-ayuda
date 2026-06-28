@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { AddressLink } from "@/components/centers/AddressLink";
 import { CoordinatorPicker } from "@/components/admin/CoordinatorPicker";
+import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
 
 export const Route = createFileRoute("/panel/admin")({
   head: () => ({ meta: [{ title: "Panel admin · Venezuela Ayuda" }] }),
@@ -35,6 +36,8 @@ interface PendingProfile {
   state: string | null;
   bio: string | null;
   created_at: string;
+  documento_tipo?: "cedula" | "pasaporte";
+  documento_numero?: string | null;
 }
 
 interface OrphanCenter {
@@ -92,7 +95,7 @@ function AdminPanel() {
         .limit(20),
       supabase
         .from("profiles")
-        .select("id, role, full_name, organization, city, state, bio, created_at")
+        .select("id, role, full_name, organization, city, state, bio, created_at, documento_tipo, documento_numero")
         .in("role", ["voluntario_medico", "autoridad", "data_entry"])
         .is("verified_at", null)
         .order("created_at", { ascending: false }),
@@ -252,6 +255,17 @@ function AdminPanel() {
                       {p.organization && ` · ${p.organization}`}
                       {(p.city || p.state) && ` · ${[p.city, p.state].filter(Boolean).join(", ")}`}
                     </div>
+                    {p.documento_numero && (
+                      <div className="mt-3 max-w-sm">
+                        <DocumentoIdentidad
+                          documentoTipo={p.documento_tipo ?? "cedula"}
+                          documentoNumero={p.documento_numero}
+                          onTipoChange={() => {}}
+                          onNumeroChange={() => {}}
+                          readOnly
+                        />
+                      </div>
+                    )}
                     {p.bio && (
                       <p className="mt-2 text-[13px] whitespace-pre-wrap">{p.bio}</p>
                     )}

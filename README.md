@@ -44,7 +44,7 @@ El problema no fue la falta de voluntad para ayudar. Fue la falta de coordinaci�
 
 **Transportista** — ve las rutas activas, conecta centros de acopio con albergues y zonas de distribución.
 
-**Diáspora venezolana** — ve el impacto en vivo de la red: familias atendidas, raciones distribuidas, voluntarios coordinados.
+**Diáspora venezolana** — ve el impacto en vivo de la red: sobrevivientes registrados, necesidades activas y centros coordinados.
 
 ---
 

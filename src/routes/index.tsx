@@ -13,13 +13,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Plataforma operativa de coordinación tras el terremoto del 24 de junio de 2026. Encuentra dónde donar, cómo ayudar o registra tu centro.",
+          "Plataforma operativa tras el sismo del 24 de junio de 2026: registro de sobrevivientes identificados y coordinación de centros de ayuda en vivo.",
       },
       { property: "og:title", content: "Venezuela Ayuda · Coordinación humanitaria en vivo" },
       {
         property: "og:description",
         content:
-          "47 centros activos coordinando ayuda en tiempo real. Encuentra dónde donar o cómo ayudar hoy.",
+          "Busca a tus familiares en el registro de sobrevivientes, o suma tu apoyo a la red de centros de ayuda.",
       },
     ],
   }),
@@ -39,11 +39,22 @@ function Landing() {
             Para cada actor
           </p>
           <h2 className="font-display font-semibold text-[28px] sm:text-[32px] max-w-[30ch] leading-tight">
-            Cuatro caminos para sumarte hoy.
+            Cinco caminos para sumarte hoy.
           </h2>
 
           <div className="mt-6">
             <ActorBlock
+              etiqueta="Buscas a un familiar"
+              titulo="Encuéntralo en el registro de sobrevivientes."
+              bullets={[
+                "Base verificada con miles de personas reportadas en hospitales, albergues y refugios.",
+                "Búsqueda por nombre. Confirma identidad con cédula y lugar exacto.",
+                "Antes de movilizarte, valida con el centro — los datos provienen de reportes oficiales.",
+              ]}
+              cta={{ label: "Buscar en el registro", to: "/rescatados" }}
+            />
+            <ActorBlock
+              reverse
               etiqueta="Donador particular"
               titulo="Encuentra dónde tu donación rinde hoy."
               bullets={[
@@ -54,7 +65,6 @@ function Landing() {
               cta={{ label: "Ver qué se necesita", to: "/necesidades" }}
             />
             <ActorBlock
-              reverse
               etiqueta="Voluntario"
               titulo="Ofrece tus manos, tus horas o tu oficio."
               bullets={[
@@ -65,6 +75,7 @@ function Landing() {
               cta={{ label: "Registrarme como voluntario", to: "/voluntarios" }}
             />
             <ActorBlock
+              reverse
               etiqueta="Coordinador de centro"
               titulo="Registra tu operación en minutos."
               bullets={[
@@ -75,7 +86,6 @@ function Landing() {
               cta={{ label: "Registrar mi centro", to: "/registrar-centro" }}
             />
             <ActorBlock
-              reverse
               etiqueta="Empresa o diáspora"
               titulo="Aporta logística, capital o redes desde donde estés."
               bullets={[

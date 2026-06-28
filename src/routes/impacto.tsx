@@ -18,7 +18,7 @@ export const Route = createFileRoute("/impacto")({
 });
 
 const SHARE_TEXT =
-  "Venezuela Ayuda: plataforma en vivo para coordinar ayuda humanitaria tras el terremoto. 96 centros activos necesitan tu ayuda hoy → venezuelaayuda.com";
+  "Venezuela Ayuda: registro en vivo de sobrevivientes del sismo y coordinación de centros de ayuda. Busca a tus familiares o suma tu apoyo → venezuela-ayuda.vercel.app";
 
 function formatHace(min: number): string {
   if (min < 60) return `hace ${min} min`;

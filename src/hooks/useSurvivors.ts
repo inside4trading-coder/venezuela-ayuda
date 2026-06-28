@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 export interface Survivor {
   id: string;
   full_name: string;
+  cedula: string | null;
   age_approx: number | null;
   gender: string | null;
   estado_fisico: "estable" | "herido_leve" | "herido_grave" | "critico" | "fallecido";

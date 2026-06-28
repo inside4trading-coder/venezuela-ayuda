@@ -6,7 +6,8 @@ import { useRescuedPersons } from "@/hooks/useRescuedPersons";
 import { useAvailableCenters } from "@/hooks/useAvailableCenters";
 import { useRegisterRescued } from "@/hooks/useRegisterRescued";
 import { useSearchPerson } from "@/hooks/useSearchPerson";
-import { useSurvivors } from "@/hooks/useSurvivors";
+import { useSurvivors, type Survivor } from "@/hooks/useSurvivors";
+import { SurvivorDetailDialog } from "@/components/rescatados/SurvivorDetailDialog";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Users, Search, Home, ChevronLeft, ChevronRight, HelpCircle, Check } from "lucide-react";
@@ -106,6 +107,9 @@ function RescatadosMarketplace() {
 
   // Marketplace filter
   const [selectedStateMarket, setSelectedStateMarket] = useState<string>("");
+
+  // Detalle de sobreviviente
+  const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
 
   const rescuedFilters = useMemo(
     () => ({
@@ -742,7 +746,11 @@ function RescatadosMarketplace() {
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
                   {survivors.map((s) => (
-                    <tr key={s.id} className="hover:bg-[var(--color-surface-alt)]/50 transition-colors">
+                    <tr
+                      key={s.id}
+                      onClick={() => setSelectedSurvivor(s)}
+                      className="hover:bg-[var(--color-surface-alt)]/50 transition-colors cursor-pointer"
+                    >
                       <td className="p-3 font-semibold text-[var(--color-text-main)]">
                         {s.full_name}
                       </td>
@@ -800,6 +808,11 @@ function RescatadosMarketplace() {
           </div>
         )}
       </section>
+
+      <SurvivorDetailDialog
+        survivor={selectedSurvivor}
+        onClose={() => setSelectedSurvivor(null)}
+      />
     </div>
   );
 }

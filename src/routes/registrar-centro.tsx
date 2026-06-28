@@ -24,6 +24,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { validateProfile } from "@/lib/requiredFields";
+import { ProfileFields } from "@/components/panel/ProfileFields";
 
 export const Route = createFileRoute("/registrar-centro")({
   head: () => ({
@@ -139,6 +141,27 @@ function RegisterCenter() {
     );
   }
 
+  if (profile && !isAdmin && !isDataEntry) {
+    const { valid } = validateProfile(profile, "coordinador");
+    if (!valid) {
+      return (
+        <Gate>
+          <h1 className="font-display text-[22px] mb-2">Completa tus datos de perfil</h1>
+          <p className="text-[13px] text-[var(--color-text-muted)] mb-6 max-w-md mx-auto">
+            Antes de registrar un centro, necesitamos que completes tu información personal obligatoria para coordinadores.
+          </p>
+          <div className="text-left bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-lg max-w-[600px] mx-auto shadow-sm" style={{ borderWidth: "0.5px" }}>
+            <ProfileFields
+              profile={profile}
+              submitLabel="Guardar y continuar al registro"
+              onSaved={refreshProfile}
+            />
+          </div>
+        </Gate>
+      );
+    }
+  }
+
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -168,6 +191,38 @@ function RegisterCenter() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    const nextErrors: Partial<Record<keyof FormState, string>> = {};
+    if (!form.nombre.trim()) nextErrors.nombre = "El nombre del centro es obligatorio.";
+    if (!form.kind) nextErrors.kind = "El tipo de operación es obligatorio.";
+    if (!form.espacio.trim()) nextErrors.espacio = "El tipo de espacio físico es obligatorio.";
+    if (!form.estadoVe) nextErrors.estadoVe = "El estado es obligatorio.";
+    if (!form.ciudad.trim()) nextErrors.ciudad = "La ciudad o municipio es obligatoria.";
+    if (!form.direccion.trim()) nextErrors.direccion = "La dirección exacta es obligatoria.";
+    if (!form.coordinador.trim()) nextErrors.coordinador = "El nombre del coordinador es obligatorio.";
+    if (!form.telefono.trim()) nextErrors.telefono = "El teléfono de contacto es obligatorio.";
+    if (!form.email.trim()) nextErrors.email = "El email de contacto es obligatorio.";
+    if (!form.estado) nextErrors.estado = "El estado operativo del centro es obligatorio.";
+
+    if (form.kind === "albergue") {
+      if (!form.capacidadMax.trim()) nextErrors.capacidadMax = "La capacidad máxima es obligatoria.";
+      if (!form.familiasActuales.trim()) nextErrors.familiasActuales = "Las familias actuales son obligatorias.";
+    } else if (form.kind === "acopio") {
+      if (!form.m2Almacen.trim()) nextErrors.m2Almacen = "La superficie de almacén es obligatoria.";
+    } else if (form.kind === "medico") {
+      if (!form.medicosActivos.trim()) nextErrors.medicosActivos = "El número de médicos es obligatorio.";
+    } else if (form.kind === "cocina") {
+      if (!form.racionesCapacidad.trim()) nextErrors.racionesCapacidad = "La capacidad de raciones es obligatoria.";
+    } else if (form.kind === "distribucion") {
+      if (!form.familiasRuta.trim()) nextErrors.familiasRuta = "Las familias en ruta son obligatorias.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      toast.error("Por favor completa los datos obligatorios del centro.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Mapear status del form al schema de Supabase

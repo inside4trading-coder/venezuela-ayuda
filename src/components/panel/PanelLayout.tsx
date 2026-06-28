@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, type ProfileRole, ROLE_LABEL } from "@/hooks/useProfile";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { validateProfile } from "@/lib/requiredFields";
+import { ProfileFields } from "@/components/panel/ProfileFields";
 
 interface Props {
   expectedRoles: ProfileRole[];
@@ -16,7 +18,7 @@ interface Props {
  */
 export function PanelLayout({ expectedRoles, title, subtitle, children }: Props) {
   const { user, isLoading: authLoading } = useAuth();
-  const { profile, isLoading: profLoading, requiresVerification, isVerified } = useProfile();
+  const { profile, isLoading: profLoading, requiresVerification, isVerified, refresh } = useProfile();
 
   if (authLoading || profLoading) return <Gate>Cargando…</Gate>;
 
@@ -42,6 +44,27 @@ export function PanelLayout({ expectedRoles, title, subtitle, children }: Props)
           Volver al directorio
         </Link>
       </Gate>
+    );
+  }
+
+  const { valid } = validateProfile(profile, profile.role);
+  if (!valid) {
+    return (
+      <div className="max-w-[640px] mx-auto px-4 py-12">
+        <div className="rounded-lg border-hair border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm" style={{ borderWidth: "0.5px" }}>
+          <h1 className="font-display font-semibold text-[20px] mb-2">
+            Completa tus datos de perfil
+          </h1>
+          <p className="text-[14px] text-[var(--color-text-muted)] mb-6 leading-relaxed">
+            Para activar tu panel de <strong>{ROLE_LABEL[profile.role]}</strong>, por favor completa tu información personal obligatoria.
+          </p>
+          <ProfileFields
+            profile={profile}
+            submitLabel="Activar mi panel"
+            onSaved={refresh}
+          />
+        </div>
+      </div>
     );
   }
 

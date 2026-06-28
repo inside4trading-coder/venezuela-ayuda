@@ -12,6 +12,7 @@ import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 interface Props {
   profile: Profile;
   onSaved?: () => void;
+  submitLabel?: string;
 }
 
 const VEHICLE_TYPES = ["Moto", "Sedán", "Pickup", "Camión pequeño", "Camión grande", "4x4", "Otro"];
@@ -26,7 +27,7 @@ const COUNTRIES = [
 ] as const;
 
 /** Renderiza solo los campos relevantes para el rol del usuario. */
-export function ProfileFields({ profile, onSaved }: Props) {
+export function ProfileFields({ profile, onSaved, submitLabel }: Props) {
   const [form, setForm] = useState<Profile>(profile);
   const [saving, setSaving] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -231,7 +232,7 @@ export function ProfileFields({ profile, onSaved }: Props) {
             disabled={saving}
             className="h-10 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] disabled:opacity-50"
           >
-            {saving ? "Guardando…" : "Guardar perfil"}
+            {saving ? "Guardando…" : (submitLabel ?? "Guardar perfil")}
           </button>
         </div>
 
@@ -250,7 +251,7 @@ function parseList(s: string): string[] {
 }
 
 function needsLocation(role: ProfileRole): boolean {
-  return ["donador", "voluntario", "voluntario_medico", "transportista", "coordinador", "autoridad"].includes(role);
+  return ["donador", "voluntario", "voluntario_medico", "transportista", "coordinador", "autoridad", "empresa", "diaspora"].includes(role);
 }
 
 function bioPlaceholder(role: ProfileRole): string {

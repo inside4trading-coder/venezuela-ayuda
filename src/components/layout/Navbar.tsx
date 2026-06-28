@@ -7,6 +7,7 @@ import { useProfile, ROLE_PANEL_PATH } from "@/hooks/useProfile";
 const LINKS = [
   { to: "/", label: "Inicio" },
   { to: "/centros", label: "Centros" },
+  { to: "/rescatados", label: "Rescatados" },
   { to: "/necesidades", label: "Necesidades" },
   { to: "/voluntarios", label: "Voluntarios" },
   { to: "/impacto", label: "Impacto" },

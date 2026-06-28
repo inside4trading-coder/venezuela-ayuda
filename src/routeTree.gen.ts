@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VoluntariosRouteImport } from './routes/voluntarios'
+import { Route as RescatadosRouteImport } from './routes/rescatados'
 import { Route as RegistrarCentroRouteImport } from './routes/registrar-centro'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NecesidadesRouteImport } from './routes/necesidades'
@@ -32,6 +33,11 @@ import { Route as CentroIdRouteImport } from './routes/centro.$id'
 const VoluntariosRoute = VoluntariosRouteImport.update({
   id: '/voluntarios',
   path: '/voluntarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RescatadosRoute = RescatadosRouteImport.update({
+  id: '/rescatados',
+  path: '/rescatados',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistrarCentroRoute = RegistrarCentroRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/necesidades': typeof NecesidadesRoute
   '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
+  '/rescatados': typeof RescatadosRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/necesidades': typeof NecesidadesRoute
   '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
+  '/rescatados': typeof RescatadosRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/necesidades': typeof NecesidadesRoute
   '/onboarding': typeof OnboardingRoute
   '/registrar-centro': typeof RegistrarCentroRoute
+  '/rescatados': typeof RescatadosRoute
   '/voluntarios': typeof VoluntariosRoute
   '/centro/$id': typeof CentroIdRoute
   '/panel/admin': typeof PanelAdminRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/necesidades'
     | '/onboarding'
     | '/registrar-centro'
+    | '/rescatados'
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/necesidades'
     | '/onboarding'
     | '/registrar-centro'
+    | '/rescatados'
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/necesidades'
     | '/onboarding'
     | '/registrar-centro'
+    | '/rescatados'
     | '/voluntarios'
     | '/centro/$id'
     | '/panel/admin'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   NecesidadesRoute: typeof NecesidadesRoute
   OnboardingRoute: typeof OnboardingRoute
   RegistrarCentroRoute: typeof RegistrarCentroRoute
+  RescatadosRoute: typeof RescatadosRoute
   VoluntariosRoute: typeof VoluntariosRoute
   CentroIdRoute: typeof CentroIdRoute
   PanelAdminRoute: typeof PanelAdminRoute
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       path: '/voluntarios'
       fullPath: '/voluntarios'
       preLoaderRoute: typeof VoluntariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rescatados': {
+      id: '/rescatados'
+      path: '/rescatados'
+      fullPath: '/rescatados'
+      preLoaderRoute: typeof RescatadosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registrar-centro': {
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   NecesidadesRoute: NecesidadesRoute,
   OnboardingRoute: OnboardingRoute,
   RegistrarCentroRoute: RegistrarCentroRoute,
+  RescatadosRoute: RescatadosRoute,
   VoluntariosRoute: VoluntariosRoute,
   CentroIdRoute: CentroIdRoute,
   PanelAdminRoute: PanelAdminRoute,

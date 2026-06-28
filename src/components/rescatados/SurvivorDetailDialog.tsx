@@ -31,9 +31,10 @@ function getEstadoFisicoBadge(estado: string) {
   }
 }
 
+const IGNORE_DESC_KEYS = new Set(["Sexo"]);
+
 const KNOWN_DESC_KEYS = [
   "Edad",
-  "Sexo",
   "Procedencia",
   "Diagnóstico",
   "Condición",
@@ -56,6 +57,14 @@ function parseDescription(desc: string | null): { fields: Array<[string, string]
   const fields: Array<[string, string]> = [];
   const otros: string[] = [];
   for (const part of parts) {
+    let skip = false;
+    for (const key of IGNORE_DESC_KEYS) {
+      if (part.startsWith(`${key}:`)) {
+        skip = true;
+        break;
+      }
+    }
+    if (skip) continue;
     let matched = false;
     for (const key of KNOWN_DESC_KEYS) {
       const prefix = `${key}:`;
@@ -164,10 +173,6 @@ export function SurvivorDetailDialog({ survivor, onClose }: Props) {
 
           {survivor.age_approx != null && !fields.some(([k]) => k === "Edad") && (
             <Row label="Edad">{survivor.age_approx} años (aprox.)</Row>
-          )}
-
-          {survivor.gender && !fields.some(([k]) => k === "Sexo") && (
-            <Row label="Género">{survivor.gender}</Row>
           )}
 
           {fields.map(([key, val], i) => (

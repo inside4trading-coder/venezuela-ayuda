@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import { Field, Select, TextInput } from "@/components/ui-vh/Field";
 import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
+import { validateProfile, FIELD_LABELS } from "@/lib/requiredFields";
 import { VOLUNTEER_ROLES } from "@/data/volunteer-roles";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
 
@@ -108,9 +109,19 @@ function Onboarding() {
   const [vcity, setVcity] = useState("");
   const [docTipo, setDocTipo] = useState<"cedula" | "pasaporte">("cedula");
   const [docNumero, setDocNumero] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     if (profile) {
+      if (profile.full_name) setFullName(profile.full_name);
+      if (profile.phone) setPhone(profile.phone);
+      if (profile.bio) setBio(profile.bio);
+      if (profile.skills) setVskills(profile.skills);
+      if (profile.state) setVstate(profile.state);
+      if (profile.city) setVcity(profile.city);
       if (profile.documento_tipo) setDocTipo(profile.documento_tipo);
       if (profile.documento_numero) setDocNumero(profile.documento_numero);
     }
@@ -203,21 +214,38 @@ function Onboarding() {
 
   const saveVolunteerProfileAndFinish = async () => {
     if (!selected) return;
+    const mockProfile: Partial<Profile> = {
+      full_name: fullName,
+      phone: phone,
+      documento_tipo: docTipo,
+      documento_numero: docNumero,
+      state: vstate,
+      city: vcity,
+      skills: vskills,
+      bio: bio,
+    };
+    const { valid, missingFields } = validateProfile(mockProfile, selected as ProfileRole);
+    if (!valid) {
+      setErrors(missingFields);
+      toast.error("Por favor completa todos los campos obligatorios.");
+      return;
+    }
+    setErrors([]);
     setSubmitting(true);
     try {
-      // Solo actualizamos lo que el user marcó (no obligatorios)
       const patch: Record<string, unknown> = {
+        full_name: fullName.trim(),
+        phone: phone.trim(),
         documento_tipo: docTipo,
         documento_numero: docNumero.trim() || null,
+        skills: vskills,
+        state: vstate.trim(),
+        city: vcity.trim(),
+        bio: selected === "voluntario_medico" ? bio.trim() : null,
       };
-      if (vskills.length > 0) patch.skills = vskills;
-      if (vstate.trim()) patch.state = vstate.trim();
-      if (vcity.trim()) patch.city = vcity.trim();
-      if (Object.keys(patch).length > 0) {
-        const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
-        if (error) throw error;
-        await refresh();
-      }
+      const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+      if (error) throw error;
+      await refresh();
       navigate({ to: ROLE_PANEL_PATH[selected as ProfileRole] });
     } catch (err: any) {
       console.error(err);
@@ -250,14 +278,37 @@ function Onboarding() {
         </header>
 
         <section className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Nombre completo">
+              <TextInput
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nombre y Apellido"
+                className={errors.includes("full_name") ? "border-red-500 focus:border-red-500" : ""}
+              />
+            </Field>
+            <Field label="Teléfono">
+              <TextInput
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+58 ..."
+                className={errors.includes("phone") ? "border-red-500 focus:border-red-500" : ""}
+              />
+            </Field>
+          </div>
+
           <DocumentoIdentidad
             documentoTipo={docTipo}
             documentoNumero={docNumero}
             onTipoChange={setDocTipo}
             onNumeroChange={setDocNumero}
+            tipoError={errors.includes("documento_tipo")}
+            numeroError={errors.includes("documento_numero")}
           />
           <div>
-            <div className="block mb-2 text-[13px]">¿En qué puedes ayudar?</div>
+            <div className={`block mb-2 text-[13px] ${errors.includes("skills") ? "text-red-500 font-semibold" : ""}`}>
+              ¿En qué puedes ayudar? {errors.includes("skills") ? "(Selecciona al menos una)" : ""}
+            </div>
             <CheckGrid
               options={VOLUNTEER_ROLES}
               selected={vskills}
@@ -267,7 +318,11 @@ function Onboarding() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Estado">
-              <Select value={vstate} onChange={(e) => setVstate(e.target.value)}>
+              <Select
+                value={vstate}
+                onChange={(e) => setVstate(e.target.value)}
+                className={errors.includes("state") ? "border-red-500 focus:ring-red-500" : ""}
+              >
                 <option value="">Selecciona…</option>
                 {ESTADOS_VENEZUELA.map((s) => (
                   <option key={s} value={s}>
@@ -277,18 +332,33 @@ function Onboarding() {
               </Select>
             </Field>
             <Field label="Ciudad o municipio">
-              <TextInput value={vcity} onChange={(e) => setVcity(e.target.value)} />
+              <TextInput
+                value={vcity}
+                onChange={(e) => setVcity(e.target.value)}
+                className={errors.includes("city") ? "border-red-500 focus:border-red-500" : ""}
+              />
             </Field>
           </div>
+
+          {selected === "voluntario_medico" && (
+            <Field label="Especialidad médica / Credenciales (MPPS)">
+              <TextInput
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Pediatra, MPPS 12345, Colegio de Médicos..."
+                className={errors.includes("bio") ? "border-red-500 focus:border-red-500" : ""}
+              />
+            </Field>
+          )}
         </section>
 
         <div className="mt-8 flex justify-between items-center">
           <button
             type="button"
-            onClick={saveVolunteerProfileAndFinish}
+            onClick={() => setStep("role")}
             className="text-[13px] text-[var(--color-text-muted)] underline"
           >
-            Saltar por ahora
+            Atrás (cambiar rol)
           </button>
           <button
             type="button"

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Field, Select, TextArea, TextInput } from "@/components/ui-vh/Field";
 import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
+import { validateProfile, FIELD_LABELS } from "@/lib/requiredFields";
 import { CheckGrid } from "@/components/ui-vh/CheckGrid";
 import type { Profile, ProfileRole } from "@/hooks/useProfile";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
@@ -28,11 +29,18 @@ const COUNTRIES = [
 export function ProfileFields({ profile, onSaved }: Props) {
   const [form, setForm] = useState<Profile>(profile);
   const [saving, setSaving] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   const save = async () => {
+    const { valid, missingFields: missing } = validateProfile(form, profile.role);
+    if (!valid) {
+      setMissingFields(missing);
+      return;
+    }
+    setMissingFields([]);
     setSaving(true);
     const patch = buildPatch(form, profile.role);
     const { error } = await supabase.from("profiles").update(patch).eq("id", profile.id);
@@ -52,10 +60,19 @@ export function ProfileFields({ profile, onSaved }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Nombre">
-          <TextInput value={form.full_name ?? ""} onChange={(e) => set("full_name", e.target.value)} />
+          <TextInput
+            value={form.full_name ?? ""}
+            onChange={(e) => set("full_name", e.target.value)}
+            className={missingFields.includes("full_name") ? "border-red-500 focus:border-red-500" : ""}
+          />
         </Field>
         <Field label="Teléfono">
-          <TextInput value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="+58…" />
+          <TextInput
+            value={form.phone ?? ""}
+            onChange={(e) => set("phone", e.target.value)}
+            placeholder="+58…"
+            className={missingFields.includes("phone") ? "border-red-500 focus:border-red-500" : ""}
+          />
         </Field>
 
         <div className="sm:col-span-2">
@@ -64,19 +81,29 @@ export function ProfileFields({ profile, onSaved }: Props) {
             documentoNumero={form.documento_numero ?? ""}
             onTipoChange={(tipo) => set("documento_tipo", tipo)}
             onNumeroChange={(num) => set("documento_numero", num)}
+            tipoError={missingFields.includes("documento_tipo")}
+            numeroError={missingFields.includes("documento_numero")}
           />
         </div>
 
         {needsLocation(profile.role) && (
           <>
             <Field label="Estado">
-              <Select value={form.state ?? ""} onChange={(e) => set("state", e.target.value)}>
+              <Select
+                value={form.state ?? ""}
+                onChange={(e) => set("state", e.target.value)}
+                className={missingFields.includes("state") ? "border-red-500 focus:border-red-500" : ""}
+              >
                 <option value="">Selecciona…</option>
                 {ESTADOS_VENEZUELA.map((s) => <option key={s} value={s}>{s}</option>)}
               </Select>
             </Field>
             <Field label="Ciudad">
-              <TextInput value={form.city ?? ""} onChange={(e) => set("city", e.target.value)} />
+              <TextInput
+                value={form.city ?? ""}
+                onChange={(e) => set("city", e.target.value)}
+                className={missingFields.includes("city") ? "border-red-500 focus:border-red-500" : ""}
+              />
             </Field>
           </>
         )}
@@ -84,17 +111,30 @@ export function ProfileFields({ profile, onSaved }: Props) {
         {(profile.role === "empresa") && (
           <>
             <Field label="Razón social">
-              <TextInput value={form.company_name ?? ""} onChange={(e) => set("company_name", e.target.value)} />
+              <TextInput
+                value={form.company_name ?? ""}
+                onChange={(e) => set("company_name", e.target.value)}
+                className={missingFields.includes("company_name") ? "border-red-500 focus:border-red-500" : ""}
+              />
             </Field>
             <Field label="RIF">
-              <TextInput value={form.tax_id ?? ""} onChange={(e) => set("tax_id", e.target.value)} placeholder="J-12345678-9" />
+              <TextInput
+                value={form.tax_id ?? ""}
+                onChange={(e) => set("tax_id", e.target.value)}
+                placeholder="J-12345678-9"
+                className={missingFields.includes("tax_id") ? "border-red-500 focus:border-red-500" : ""}
+              />
             </Field>
           </>
         )}
 
         {profile.role === "diaspora" && (
           <Field label="País desde donde aportas">
-            <Select value={form.country ?? ""} onChange={(e) => set("country", e.target.value)}>
+            <Select
+              value={form.country ?? ""}
+              onChange={(e) => set("country", e.target.value)}
+              className={missingFields.includes("country") ? "border-red-500 focus:border-red-500" : ""}
+            >
               <option value="">Selecciona…</option>
               {COUNTRIES.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
             </Select>
@@ -104,7 +144,11 @@ export function ProfileFields({ profile, onSaved }: Props) {
         {profile.role === "transportista" && (
           <>
             <Field label="Tipo de vehículo">
-              <Select value={form.vehicle_type ?? ""} onChange={(e) => set("vehicle_type", e.target.value)}>
+              <Select
+                value={form.vehicle_type ?? ""}
+                onChange={(e) => set("vehicle_type", e.target.value)}
+                className={missingFields.includes("vehicle_type") ? "border-red-500 focus:border-red-500" : ""}
+              >
                 <option value="">Selecciona…</option>
                 {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
               </Select>
@@ -114,10 +158,15 @@ export function ProfileFields({ profile, onSaved }: Props) {
                 type="number" min="0"
                 value={form.vehicle_capacity_kg ?? ""}
                 onChange={(e) => set("vehicle_capacity_kg", e.target.value === "" ? null : Number(e.target.value))}
+                className={missingFields.includes("vehicle_capacity_kg") ? "border-red-500 focus:border-red-500" : ""}
               />
             </Field>
             <Field label="Placa">
-              <TextInput value={form.license_plate ?? ""} onChange={(e) => set("license_plate", e.target.value)} />
+              <TextInput
+                value={form.license_plate ?? ""}
+                onChange={(e) => set("license_plate", e.target.value)}
+                className={missingFields.includes("license_plate") ? "border-red-500 focus:border-red-500" : ""}
+              />
             </Field>
           </>
         )}
@@ -125,7 +174,9 @@ export function ProfileFields({ profile, onSaved }: Props) {
         {(profile.role === "voluntario" || profile.role === "voluntario_medico") && (
           <>
             <div className="sm:col-span-2">
-              <div className="block mb-1.5 text-[13px]">Tipos de ayuda que puedes dar</div>
+              <div className={`block mb-1.5 text-[13px] ${missingFields.includes("skills") ? "text-red-500 font-semibold" : ""}`}>
+                Tipos de ayuda que puedes dar {missingFields.includes("skills") ? "(requerido)" : ""}
+              </div>
               <CheckGrid
                 options={VOLUNTEER_ROLES}
                 selected={form.skills ?? []}
@@ -151,6 +202,7 @@ export function ProfileFields({ profile, onSaved }: Props) {
               value={(form.zones ?? []).join(", ")}
               onChange={(e) => set("zones", parseList(e.target.value))}
               placeholder="Vargas, La Guaira, Caracas…"
+              className={missingFields.includes("zones") ? "border-red-500 focus:border-red-500" : ""}
             />
           </Field>
         )}
@@ -167,18 +219,27 @@ export function ProfileFields({ profile, onSaved }: Props) {
           value={form.bio ?? ""}
           onChange={(e) => set("bio", e.target.value)}
           placeholder={bioPlaceholder(profile.role)}
+          className={missingFields.includes("bio") ? "border-red-500 focus:border-red-500" : ""}
         />
       </Field>
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="h-10 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] disabled:opacity-50"
-        >
-          {saving ? "Guardando…" : "Guardar perfil"}
-        </button>
+      <div className="flex flex-col items-end gap-3">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="h-10 px-5 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[14px] disabled:opacity-50"
+          >
+            {saving ? "Guardando…" : "Guardar perfil"}
+          </button>
+        </div>
+
+        {missingFields.length > 0 && (
+          <div className="w-full text-right text-[13px] text-[var(--color-critical)]">
+            <span>Faltan campos obligatorios: {missingFields.map((f) => FIELD_LABELS[f] ?? f).join(", ")}</span>
+          </div>
+        )}
       </div>
     </section>
   );

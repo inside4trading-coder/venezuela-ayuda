@@ -8,6 +8,7 @@ import { AuthButton } from "@/components/auth/AuthButton";
 import { AddressLink } from "@/components/centers/AddressLink";
 import { CoordinatorPicker } from "@/components/admin/CoordinatorPicker";
 import { DocumentoIdentidad } from "@/components/ui/DocumentoIdentidad";
+import { validateProfile } from "@/lib/requiredFields";
 
 export const Route = createFileRoute("/panel/admin")({
   head: () => ({ meta: [{ title: "Panel admin · Venezuela Ayuda" }] }),
@@ -31,6 +32,7 @@ interface PendingProfile {
   id: string;
   role: ProfileRole;
   full_name: string | null;
+  phone?: string | null;
   organization: string | null;
   city: string | null;
   state: string | null;
@@ -38,6 +40,14 @@ interface PendingProfile {
   created_at: string;
   documento_tipo?: "cedula" | "pasaporte";
   documento_numero?: string | null;
+  skills?: string[];
+  zones?: string[];
+  vehicle_type?: string | null;
+  vehicle_capacity_kg?: number | null;
+  license_plate?: string | null;
+  country?: string | null;
+  company_name?: string | null;
+  tax_id?: string | null;
 }
 
 interface OrphanCenter {
@@ -95,7 +105,7 @@ function AdminPanel() {
         .limit(20),
       supabase
         .from("profiles")
-        .select("id, role, full_name, organization, city, state, bio, created_at, documento_tipo, documento_numero")
+        .select("id, role, full_name, phone, organization, city, state, bio, created_at, documento_tipo, documento_numero, skills, zones, vehicle_type, vehicle_capacity_kg, license_plate, country, company_name, tax_id")
         .in("role", ["voluntario_medico", "autoridad", "data_entry"])
         .is("verified_at", null)
         .order("created_at", { ascending: false }),
@@ -255,6 +265,18 @@ function AdminPanel() {
                       {p.organization && ` · ${p.organization}`}
                       {(p.city || p.state) && ` · ${[p.city, p.state].filter(Boolean).join(", ")}`}
                     </div>
+                    {(() => {
+                      const { valid, missingFields } = validateProfile(p, p.role);
+                      return valid ? (
+                        <span className="inline-block mt-2 text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[var(--color-resolved)] text-white font-semibold font-display">
+                          Perfil completo
+                        </span>
+                      ) : (
+                        <span className="inline-block mt-2 text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-[var(--color-caution)] text-white font-semibold font-display">
+                          {missingFields.length} {missingFields.length === 1 ? "campo pendiente" : "campos pendientes"}
+                        </span>
+                      );
+                    })()}
                     {p.documento_numero && (
                       <div className="mt-3 max-w-sm">
                         <DocumentoIdentidad

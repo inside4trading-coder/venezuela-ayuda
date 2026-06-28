@@ -15,6 +15,8 @@ interface DocumentoIdentidadProps {
   onTipoChange: (tipo: "cedula" | "pasaporte") => void;
   onNumeroChange: (numero: string) => void;
   readOnly?: boolean;
+  tipoError?: boolean;
+  numeroError?: boolean;
 }
 
 export function DocumentoIdentidad({
@@ -23,6 +25,8 @@ export function DocumentoIdentidad({
   onTipoChange,
   onNumeroChange,
   readOnly = false,
+  tipoError = false,
+  numeroError = false,
 }: DocumentoIdentidadProps) {
   const placeholder =
     documentoTipo === "cedula" ? "Ej: V-12345678" : "Ej: AB123456789";
@@ -62,7 +66,7 @@ export function DocumentoIdentidad({
           value={documentoTipo}
           onValueChange={(val) => onTipoChange(val as "cedula" | "pasaporte")}
         >
-          <SelectTrigger className="w-full h-9 border border-input bg-transparent text-[14px]">
+          <SelectTrigger className={`w-full h-9 border border-input bg-transparent text-[14px] ${tipoError ? "border-red-500 focus:ring-red-500" : ""}`}>
             <SelectValue placeholder="Selecciona el tipo" />
           </SelectTrigger>
           <SelectContent className="bg-[var(--color-surface)] border-[var(--color-border)]">
@@ -81,7 +85,7 @@ export function DocumentoIdentidad({
           value={documentoNumero}
           onChange={(e) => onNumeroChange(e.target.value)}
           placeholder={placeholder}
-          className="h-9 border border-input bg-transparent px-3 py-2 text-[14px]"
+          className={`h-9 border border-input bg-transparent px-3 py-2 text-[14px] ${numeroError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
         />
       </div>
     </div>

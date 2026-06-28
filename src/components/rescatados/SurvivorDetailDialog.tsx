@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, Check, ExternalLink, HeartHandshake } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -8,10 +8,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Survivor } from "@/hooks/useSurvivors";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { useMarkSurvivorReunited } from "@/hooks/useMarkSurvivorReunited";
 
 interface Props {
   survivor: Survivor | null;
   onClose: () => void;
+  onUpdated?: () => void;
 }
 
 function getEstadoFisicoBadge(estado: string) {
@@ -96,13 +100,49 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export function SurvivorDetailDialog({ survivor, onClose }: Props) {
+export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
   const [copied, setCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [note, setNote] = useState("");
+  const { user } = useAuth();
+  const { isAdmin } = useProfile();
+  const { mark, unmark, busy } = useMarkSurvivorReunited();
+
+  useEffect(() => {
+    setConfirming(false);
+    setNote("");
+  }, [survivor?.id]);
 
   if (!survivor) return null;
 
   const badge = getEstadoFisicoBadge(survivor.estado_fisico);
   const { fields, otros } = parseDescription(survivor.descripcion);
+  const isReunited = !!survivor.reunited_at;
+  const noteValid = note.trim().length >= 5;
+
+  const handleMark = async () => {
+    const { ok, error } = await mark(survivor.id, note);
+    if (!ok) {
+      toast.error(error ?? "No se pudo marcar");
+      return;
+    }
+    toast.success("Marcado como reunido con su familia");
+    setConfirming(false);
+    setNote("");
+    onUpdated?.();
+    onClose();
+  };
+
+  const handleUnmark = async () => {
+    const { ok, error } = await unmark(survivor.id);
+    if (!ok) {
+      toast.error(error ?? "No se pudo deshacer");
+      return;
+    }
+    toast.success("Marca de reencuentro removida");
+    onUpdated?.();
+    onClose();
+  };
 
   const copyCedula = async () => {
     if (!survivor.cedula) return;
@@ -130,12 +170,17 @@ export function SurvivorDetailDialog({ survivor, onClose }: Props) {
           <DialogTitle className="font-display text-[22px] pr-8">
             {survivor.full_name}
           </DialogTitle>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span
               className={`px-2 py-0.5 rounded text-[11px] font-medium border ${badge.classes}`}
             >
               {badge.label}
             </span>
+            {isReunited && (
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold border bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900 inline-flex items-center gap-1">
+                <HeartHandshake className="h-3 w-3" /> Reunido con familia
+              </span>
+            )}
             {survivor.verified ? (
               <span className="text-[11px] text-[var(--color-resolved)] uppercase tracking-label font-mono">
                 ✓ Verificado
@@ -147,6 +192,34 @@ export function SurvivorDetailDialog({ survivor, onClose }: Props) {
             )}
           </div>
         </DialogHeader>
+
+        {isReunited && (
+          <div className="rounded-md border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-[13px]">
+            <p className="text-emerald-900 dark:text-emerald-200 font-medium">
+              ✓ Reunido con su familia el{" "}
+              {new Date(survivor.reunited_at!).toLocaleDateString("es-VE", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            {survivor.reunited_note && (
+              <p className="text-emerald-800/80 dark:text-emerald-300/80 mt-1 italic">
+                "{survivor.reunited_note}"
+              </p>
+            )}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleUnmark}
+                disabled={busy}
+                className="mt-2 text-[12px] text-[var(--color-critical)] hover:underline disabled:opacity-50"
+              >
+                Deshacer marca
+              </button>
+            )}
+          </div>
+        )}
 
         <dl className="mt-4">
           {survivor.cedula && (
@@ -219,6 +292,64 @@ export function SurvivorDetailDialog({ survivor, onClose }: Props) {
           Si reconoces a esta persona como un familiar, confirma con el centro
           antes de movilizarte. Información cargada desde reportes oficiales.
         </p>
+
+        {!isReunited && (
+          <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+            {user ? (
+              confirming ? (
+                <div className="space-y-2">
+                  <label className="block text-[12px] font-medium text-[var(--color-text-main)]">
+                    Cuéntanos brevemente cómo se logró la reunión
+                  </label>
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    placeholder="Ej. Lo encontró su hermana en el hospital esta mañana."
+                    className="w-full px-3 py-2 text-[13px] rounded-md border-hair border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-text-main)]"
+                  />
+                  <p className="text-[11px] text-[var(--color-text-muted)]">
+                    {note.trim().length}/5 caracteres mínimos
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirming(false);
+                        setNote("");
+                      }}
+                      disabled={busy}
+                      className="px-3 py-1.5 text-[13px] rounded-md border-hair border-[var(--color-border)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMark}
+                      disabled={!noteValid || busy}
+                      className="px-3 py-1.5 text-[13px] rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {busy ? "Guardando…" : "Confirmar reunión"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirming(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[13px] rounded-md border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-medium"
+                >
+                  <HeartHandshake className="h-4 w-4" />
+                  Marcar como reunido con su familia
+                </button>
+              )
+            ) : (
+              <p className="text-[12px] text-[var(--color-text-muted)] text-center">
+                Inicia sesión con Google desde el navbar para marcar la reunión con familia.
+              </p>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

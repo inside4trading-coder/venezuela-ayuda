@@ -42,6 +42,8 @@ function RescatadosPage() {
   const [survivorSearch, setSurvivorSearch] = useState<string>("");
   const [survivorState, setSurvivorState] = useState<string>("");
   const [survivorPage, setSurvivorPage] = useState<number>(1);
+  const [hideReunited, setHideReunited] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   const survivorFilters = useMemo(
     () => ({
@@ -49,8 +51,10 @@ function RescatadosPage() {
       state: survivorState || undefined,
       page: survivorPage,
       pageSize: 10,
+      hideReunited,
+      refreshKey,
     }),
-    [survivorSearch, survivorState, survivorPage],
+    [survivorSearch, survivorState, survivorPage, hideReunited, refreshKey],
   );
 
   const { items: survivors, totalCount: totalSurvivors, loading: loadingSurvivors } =
@@ -114,6 +118,19 @@ function RescatadosPage() {
           </Select>
         </div>
 
+        <label className="flex items-center gap-2 text-[13px] text-[var(--color-text-muted)] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hideReunited}
+            onChange={(e) => {
+              setHideReunited(e.target.checked);
+              setSurvivorPage(1);
+            }}
+            className="accent-emerald-600 w-4 h-4 cursor-pointer"
+          />
+          Ocultar reunidos con familia
+        </label>
+
         {loadingSurvivors ? (
           <p className="text-[13px] text-[var(--color-text-muted)]">Cargando sobrevivientes...</p>
         ) : survivors.length === 0 ? (
@@ -140,7 +157,12 @@ function RescatadosPage() {
                       className="hover:bg-[var(--color-surface-alt)]/50 transition-colors cursor-pointer"
                     >
                       <td className="p-3 font-semibold text-[var(--color-text-main)]">
-                        {s.full_name}
+                        <span>{s.full_name}</span>
+                        {s.reunited_at && (
+                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 align-middle">
+                            ✓ Reunido
+                          </span>
+                        )}
                       </td>
                       <td className="p-3">
                         <span className="block text-[var(--color-text-main)]">
@@ -199,6 +221,7 @@ function RescatadosPage() {
       <SurvivorDetailDialog
         survivor={selectedSurvivor}
         onClose={() => setSelectedSurvivor(null)}
+        onUpdated={() => setRefreshKey((k) => k + 1)}
       />
     </div>
   );

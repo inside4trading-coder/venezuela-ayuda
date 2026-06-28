@@ -17,6 +17,9 @@ export interface Survivor {
   verified: boolean;
   registered_by: string | null;
   created_at: string;
+  reunited_at: string | null;
+  reunited_by: string | null;
+  reunited_note: string | null;
 }
 
 export interface SurvivorsFilters {
@@ -25,6 +28,8 @@ export interface SurvivorsFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  hideReunited?: boolean;
+  refreshKey?: number;
 }
 
 export function useSurvivors(filters: SurvivorsFilters = {}) {
@@ -37,6 +42,8 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
   const state = filters.state;
   const estadoFisico = filters.estado_fisico;
   const searchName = filters.search;
+  const hideReunited = filters.hideReunited ?? false;
+  const refreshKey = filters.refreshKey ?? 0;
 
   useEffect(() => {
     let active = true;
@@ -56,6 +63,9 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
         }
         if (searchName && searchName.trim()) {
           q = q.ilike("full_name", `%${searchName.trim()}%`);
+        }
+        if (hideReunited) {
+          q = q.is("reunited_at", null);
         }
 
         const from = (page - 1) * pageSize;
@@ -84,7 +94,7 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
     return () => {
       active = false;
     };
-  }, [state, estadoFisico, searchName, page, pageSize]);
+  }, [state, estadoFisico, searchName, page, pageSize, hideReunited, refreshKey]);
 
   return { items, totalCount, loading };
 }

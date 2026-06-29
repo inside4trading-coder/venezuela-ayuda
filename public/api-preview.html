@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Venezuela Ayuda — API Pública (Preview)</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #141821;
+    --border: #232936;
+    --text: #e7eaf0;
+    --muted: #8c93a1;
+    --accent: #4f9cf9;
+    --ok: #36d399;
+    --warn: #f1c40f;
+    --err: #ef4444;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.5;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; }
+  h1 .badge {
+    display: inline-block; background: var(--ok); color: #0b0d12;
+    padding: 2px 8px; font-size: 11px; border-radius: 4px;
+    vertical-align: middle; margin-left: 8px; font-weight: 700;
+  }
+  .lede { color: var(--muted); margin: 0 0 24px; max-width: 860px; }
+  .lede a { color: var(--accent); }
+  .grid { display: grid; gap: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  .card header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .card header h2 { margin: 0; font-size: 15px; }
+  .card header .url {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: #0b0d12; padding: 4px 8px; border-radius: 4px;
+    word-break: break-all; flex: 1; min-width: 280px;
+  }
+  .card header .meta {
+    font-size: 12px; color: var(--muted);
+  }
+  .card header .meta strong { color: var(--text); }
+  .body {
+    padding: 0; max-height: 420px; overflow: auto;
+  }
+  pre {
+    margin: 0; padding: 16px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text); white-space: pre-wrap; word-break: break-word;
+  }
+  .status-line {
+    padding: 10px 16px; font-size: 12px; color: var(--muted);
+    border-top: 1px solid var(--border); background: #0b0d12;
+    display: flex; gap: 16px; align-items: center;
+  }
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 11px;
+    padding: 2px 6px; border-radius: 3px; background: var(--border);
+  }
+  .pill.ok { background: var(--ok); color: #0b0d12; }
+  .pill.err { background: var(--err); color: #fff; }
+  .controls {
+    margin: 16px 0 24px; display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  button {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); padding: 6px 12px;
+    border-radius: 4px; cursor: pointer; font: inherit; font-size: 13px;
+  }
+  button:hover { border-color: var(--accent); }
+  .key-string { color: #9cdcfe; }
+  .val-string { color: #ce9178; }
+  .val-number { color: #b5cea8; }
+  .val-bool { color: #569cd6; }
+  .val-null { color: #808080; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 12px; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>Venezuela Ayuda — API Pública <span class="badge">LIVE</span></h1>
+<p class="lede">
+  Datos abiertos en tiempo real expuestos vía Supabase PostgREST + vistas SQL filtradas.
+  Esta página es sólo un visor — la API real requiere 3 headers
+  (<code>apikey</code>, <code>Authorization: Bearer</code>, <code>Accept-Profile: public</code>).
+  Documentación completa: <a href="https://github.com/inside4trading-coder/venezuela-ayuda/blob/main/endpoints/README.md">endpoints/README.md</a>.
+</p>
+
+<div class="controls">
+  <button onclick="loadAll()">↻ Recargar todo</button>
+  <button onclick="document.querySelectorAll('details').forEach(d => d.open = true)">Expandir todo</button>
+  <button onclick="document.querySelectorAll('details').forEach(d => d.open = false)">Colapsar todo</button>
+</div>
+
+<div id="grid" class="grid"></div>
+
+<footer>
+  <p>
+    Esta página consume datos en vivo desde <code>kqtilzssuynblfkuqxyx.supabase.co</code>.
+    Sobrevivientes: sin cédula, menores anonimizados, reunidos automáticamente excluidos.
+    Centros / inventario / voluntarios: sólo registros verificados.
+  </p>
+  <p>
+    🔗 <a href="https://vnzla-ayuda.vercel.app/">Volver al sitio</a> ·
+    💻 <a href="https://github.com/inside4trading-coder/venezuela-ayuda">GitHub</a>
+  </p>
+</footer>
+
+<script>
+const APIKEY = "sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8";
+const BASE = "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1";
+const HEADERS = {
+  "apikey": APIKEY,
+  "Authorization": "Bearer " + APIKEY,
+  "Accept-Profile": "public"
+};
+
+const ENDPOINTS = [
+  {
+    id: "survivors_public",
+    title: "Sobrevivientes",
+    kind: "persona-desaparecida",
+    desc: "Sin cédula. Menores (<18) anonimizados. Reunidos excluidos."
+  },
+  {
+    id: "centers_public",
+    title: "Centros de acopio",
+    kind: "general",
+    desc: "Sólo centros verificados. Coordenadas redondeadas (~1 km)."
+  },
+  {
+    id: "inventory_public",
+    title: "Inventario / Necesidades",
+    kind: "general",
+    desc: "Items de stock por centro verificado."
+  },
+  {
+    id: "volunteer_roles_public",
+    title: "Roles de voluntariado abiertos",
+    kind: "general",
+    desc: "Roles por centro. No expone voluntarios individuales."
+  }
+];
+
+function syntaxHighlight(json) {
+  return json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      let cls = "val-number";
+      if (/^"/.test(m)) cls = /:$/.test(m) ? "key-string" : "val-string";
+      else if (/true|false/.test(m)) cls = "val-bool";
+      else if (/null/.test(m)) cls = "val-null";
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+
+async function fetchEndpoint(ep) {
+  const url = `${BASE}/${ep.id}?select=*&limit=10`;
+  const card = document.getElementById("card-" + ep.id);
+  const body = card.querySelector(".body");
+  const status = card.querySelector(".status-line");
+  body.innerHTML = '<pre style="color:#8c93a1">cargando…</pre>';
+  status.innerHTML = "";
+  const t0 = performance.now();
+  try {
+    const r = await fetch(url, { headers: HEADERS });
+    const ms = Math.round(performance.now() - t0);
+    const text = await r.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    body.innerHTML = '<pre>' + syntaxHighlight(JSON.stringify(parsed, null, 2)) + '</pre>';
+    const count = Array.isArray(parsed) ? parsed.length : null;
+    status.innerHTML = `
+      <span class="pill ${r.ok ? 'ok' : 'err'}">${r.status} ${r.statusText}</span>
+      <span>${ms} ms</span>
+      ${count !== null ? `<span>${count} filas</span>` : ""}
+      <span style="margin-left:auto"><a href="${url}" style="color:var(--muted)" target="_blank">(URL no funciona en browser sin headers)</a></span>
+    `;
+  } catch (e) {
+    body.innerHTML = `<pre style="color:var(--err)">${e.message}</pre>`;
+    status.innerHTML = `<span class="pill err">ERROR</span>`;
+  }
+}
+
+function render() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = ENDPOINTS.map(ep => `
+    <details id="card-${ep.id}" class="card" open>
+      <summary style="list-style:none; cursor:pointer; display:block">
+        <header>
+          <h2>${ep.title}</h2>
+          <span class="meta">perfil <strong>${ep.kind}</strong></span>
+          <span class="url">/rest/v1/${ep.id}?select=*&amp;limit=10</span>
+        </header>
+      </summary>
+      <div class="meta" style="padding:8px 16px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border)">
+        ${ep.desc}
+      </div>
+      <div class="body"></div>
+      <div class="status-line"></div>
+    </details>
+  `).join("");
+}
+
+async function loadAll() {
+  for (const ep of ENDPOINTS) await fetchEndpoint(ep);
+}
+
+render();
+loadAll();
+</script>
+
+</body>
+</html>

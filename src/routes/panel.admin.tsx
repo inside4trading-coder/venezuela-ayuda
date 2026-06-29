@@ -960,11 +960,11 @@ function AdminPanel() {
                                 A
                               </span>
                               <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                                {d.nombre_a}
+                                {d.name_a}
                               </h4>
                             </div>
                             <p className="text-[13px] text-[var(--color-text-muted)]">
-                              {d.estado_a || "Estado desconocido"} · {d.ubicacion_a || "Ubicación no registrada"}
+                              {d.location_a || "Ubicación no registrada"}
                             </p>
                             <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
                               {d.cedula_a ? `Cédula: ${d.cedula_a}` : "Sin cédula"}
@@ -975,14 +975,14 @@ function AdminPanel() {
                           <div className="space-y-1.5 md:text-right md:border-l md:border-[var(--color-border)] md:pl-6">
                             <div className="flex items-center gap-2 md:justify-end">
                               <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                                {d.nombre_b}
+                                {d.name_b}
                               </h4>
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                                 B
                               </span>
                             </div>
                             <p className="text-[13px] text-[var(--color-text-muted)]">
-                              {d.estado_b || "Estado desconocido"} · {d.ubicacion_b || "Ubicación no registrada"}
+                              {d.location_b || "Ubicación no registrada"}
                             </p>
                             <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
                               {d.cedula_b ? `Cédula: ${d.cedula_b}` : "Sin cédula"}

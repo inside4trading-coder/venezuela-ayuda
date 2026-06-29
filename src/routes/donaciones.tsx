@@ -51,7 +51,7 @@ function DonacionesPage() {
       <header className="text-center space-y-3 max-w-[760px] mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-surface-alt)] border-hair border-[var(--color-border)] text-[11px] uppercase tracking-label text-[var(--color-text-muted)] font-mono">
           <img
-            src="/solo-fe-logo.jpg"
+            src="/solo-fe-logo.png"
             alt=""
             aria-hidden="true"
             className="h-4 w-4 rounded-full object-cover"
@@ -141,7 +141,7 @@ function DonacionesPage() {
       <section className="rounded-lg border-hair border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="shrink-0 h-16 w-16 rounded-full bg-white border-hair border-[var(--color-border)] flex items-center justify-center overflow-hidden" style={{ borderWidth: "0.5px" }}>
           <img
-            src="/solo-fe-logo.jpg"
+            src="/solo-fe-logo.png"
             alt="Logo Organización Solo Fe"
             className="h-full w-full object-contain p-1"
           />

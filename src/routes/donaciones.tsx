@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Instagram, AlertTriangle, ExternalLink, Heart } from "lucide-react";
+import { AlertTriangle, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/donaciones/CopyButton";
 import {
   SOLO_FE,
@@ -50,7 +50,12 @@ function DonacionesPage() {
     <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 lg:py-12 space-y-10">
       <header className="text-center space-y-3 max-w-[760px] mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-surface-alt)] border-hair border-[var(--color-border)] text-[11px] uppercase tracking-label text-[var(--color-text-muted)] font-mono">
-          <Heart className="h-3 w-3 text-[var(--color-critical)]" />
+          <img
+            src="/solo-fe-logo.jpg"
+            alt=""
+            aria-hidden="true"
+            className="h-4 w-4 rounded-full object-cover"
+          />
           Alianza con Organización Solo Fe
         </div>
         <h1 className="font-display font-semibold text-[32px] sm:text-[40px] leading-tight tracking-tight">
@@ -134,11 +139,12 @@ function DonacionesPage() {
       </section>
 
       <section className="rounded-lg border-hair border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div
-          className="shrink-0 h-14 w-14 rounded-full flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #833AB4, #FD1D1D, #FCB045)" }}
-        >
-          <Instagram className="h-6 w-6 text-white" />
+        <div className="shrink-0 h-16 w-16 rounded-full bg-white border-hair border-[var(--color-border)] flex items-center justify-center overflow-hidden" style={{ borderWidth: "0.5px" }}>
+          <img
+            src="/solo-fe-logo.jpg"
+            alt="Logo Organización Solo Fe"
+            className="h-full w-full object-contain p-1"
+          />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-display font-semibold text-[18px]">

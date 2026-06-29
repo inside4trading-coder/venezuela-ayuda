@@ -4,7 +4,7 @@
 
 > Conectamos donadores, voluntarios, centros de acopio, autoridades y familias afectadas en una sola plataforma operacional. Sin fricción. Sin burocracia. En vivo.
 
-🔗 **Producción:** https://vnzla-ayuda.vercel.app/
+🔗 **Producción:** https://vnzla-ayuda.org/
 
 ---
 
@@ -41,10 +41,11 @@ El problema no fue la falta de voluntad para ayudar. Fue la falta de coordinaci�
 
 - **Directorio de centros** (`/centros`) — filtros por tipo, estado, necesidades, capacidad
 - **Necesidades agregadas** (`/necesidades`) — qué hace falta a nivel red, no centro a centro
-- **Sobrevivientes** (`/rescatados`) — registro central de personas afectadas, con marcado de "reunido con familia"
+- **Sobrevivientes** (`/rescatados`) — registro central de personas afectadas, con marcado de "reunido con familia", filtros por estado físico, cédula y ubicación
+- **Edificios** (`/edificios`) — directorio de edificaciones con geolocalización automática vía Nominatim y calidad de datos con fuzzy matching
 - **Voluntarios** (`/voluntarios`) — marketplace de roles abiertos por centro
 - **Donaciones** (`/donaciones`) — alianza con la **Organización Solo Fe** para canalizar aportes
-- **Impacto** (`/impacto`) — métricas públicas en vivo
+- **Impacto** (`/impacto`) — métricas públicas en vivo, incluyendo datos de la red ayudaavzla.com (sobrevivientes a salvo, en búsqueda)
 
 ### Panel por rol (10 perfiles)
 
@@ -52,7 +53,7 @@ Cada actor tiene su propio panel con permisos específicos vía RLS de Supabase:
 
 | Panel | Para | Qué hace |
 |-------|------|----------|
-| `/panel/admin` | Administradores | Verificación de centros, gestión de roles, **fusión de sobrevivientes duplicados** |
+| `/panel/admin` | Administradores | Verificación de centros, gestión de roles, **herramienta de calidad de datos con fuzzy matching** para sobrevivientes y edificios |
 | `/panel/autoridad` | Protección Civil, alcaldías | Vista táctica, georreferenciación |
 | `/panel/centro` | Coordinadores de centro | Inventario en vivo, roles abiertos, estado |
 | `/panel/data-entry` | Operadores de captura | Carga masiva de sobrevivientes y centros |
@@ -62,6 +63,13 @@ Cada actor tiene su propio panel con permisos específicos vía RLS de Supabase:
 | `/panel/ong` | ONGs aliadas | Integración de datos propios |
 | `/panel/transportista` | Logística | Rutas activas, vehículos disponibles |
 | `/panel/voluntario` | Voluntarios | Roles abiertos, postulaciones, asignaciones |
+
+### Calidad de datos (Admin)
+
+El panel de administración incluye una herramienta de **calidad de datos** con dos módulos:
+
+1. **Sobrevivientes (Base de datos)** — detecta pares de registros con similitud ≥ 70% usando `pg_trgm` de PostgreSQL. Permite fusión manual (conservar A o B) o **limpieza automática** de todos los pares con similitud ≥ 78%.
+2. **Edificios (Fuzzy Matching)** — detecta duplicados en el directorio de edificaciones usando distancia de Levenshtein desde el cliente. Geolocalización automática con la API de Nominatim.
 
 ---
 
@@ -101,19 +109,17 @@ curl -H "apikey: sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8" \
 ### Garantías de privacidad
 
 - **Sobrevivientes:** sin `cedula`. Menores de 18 con `person_name` y `age` enmascarados — sólo ciudad/estado.
-- **Reunidos:** las personas marcadas como reunidas con su familia desaparecen del endpoint automáticamente (modelo federado: la fuente conserva derecho de borrado).
+- **Reunidos:** las personas marcadas como reunidas con su familia desaparecen del endpoint automáticamente.
 - **Voluntarios:** no se exponen personas individuales — sólo qué roles abiertos hay por centro.
 
 ### Estado de verificación
 
-Las 4 vistas exponen **todos** los registros (verificados y no verificados). El consumidor distingue mediante:
+Las vistas exponen **todos** los registros (verificados y no verificados). El consumidor distingue mediante:
 
 - Campo booleano `verified` en cada fila.
-- Tag `'no_verificado'` (sobrevivientes y centros) o `'centro_no_verificado'` (inventario y roles) en el array `tags`.
+- Tag `'no_verificado'` (sobrevivientes y centros) en el array `tags`.
 
 Filtrar por verificados desde el cliente: agregá `?verified=eq.true` a la URL.
-
-Documentación completa, smoke tests y propuestas para registrar en redes federadas: ver [`endpoints/README.md`](endpoints/README.md).
 
 ---
 
@@ -121,13 +127,14 @@ Documentación completa, smoke tests y propuestas para registrar en redes federa
 
 ```
 Frontend    React 19 + TypeScript + TanStack Router
-Estilos     Tailwind CSS v4 + sistema de tokens propio
-UI Base     shadcn/ui (Radix UI) + componentes propios
-Build       Vite 7 + Bun
-Deploy      Vercel (auto-deploy desde GitHub)
+Estilos     Vanilla CSS + sistema de tokens propio
+Build       Vite 7
+Deploy      Vercel (auto-deploy desde GitHub) → dominio https://vnzla-ayuda.org
 Backend     Supabase (PostgreSQL + Auth + RLS + Storage + Realtime)
 Auth        Google OAuth via Supabase
 API pública Supabase PostgREST + vistas SQL filtradas (public.*_public)
+Geocoding   Nominatim (OpenStreetMap) — sin costo, sin API key
+Similitud   pg_trgm (PostgreSQL) — búsqueda de duplicados con índices GIN
 ```
 
 ### Sistema de diseño
@@ -159,34 +166,36 @@ src/
 ├── hooks/                    # Toda la lógica de datos (Supabase + cache)
 │   ├── useCenters.ts        # Directorio con degradación graceful
 │   ├── useSurvivors.ts      # Sobrevivientes con paginación y filtros
-│   ├── useImpact.ts         # Métricas en vivo
+│   ├── useImpact.ts         # Métricas en vivo (local + red externa)
 │   ├── useLiveStats.ts      # Ticker operacional
 │   ├── useMarkSurvivorReunited.ts
 │   └── usePanelData.ts
 ├── lib/
 │   ├── supabase.ts          # Cliente Supabase
 │   ├── queries.ts           # Queries base
-│   ├── nominatim.ts         # Geocoding
+│   ├── nominatim.ts         # Geocoding (edificios)
 │   └── requiredFields.ts
 ├── components/
 │   ├── centers/             # CenterCard, FiltersPanel
+│   ├── landing/             # Hero, HowItWorks, ActorBlock, KindStrip, ImpactStrip
 │   ├── layout/              # LiveTicker, Navbar
-│   └── ui-vh/               # Badge, StatusPill, CapacityBar, NeedTag, KindBadge
+│   └── ui/                  # Badge, StatusPill, CapacityBar, NeedTag, KindBadge
 └── routes/
     ├── index.tsx, centros.tsx, centro.$id.tsx
-    ├── donaciones.tsx, rescatados.tsx, necesidades.tsx
+    ├── donaciones.tsx, rescatados.tsx, necesidades.tsx, edificios.tsx
     ├── voluntarios.tsx, impacto.tsx, onboarding.tsx
     ├── registrar-centro.tsx, marca.tsx
     └── panel.{admin,autoridad,centro,data-entry,diaspora,
                 donador,empresa,ong,transportista,voluntario}.tsx
 
 supabase/
-└── migrations/              # 14+ migraciones versionadas
+└── migrations/              # 20+ migraciones versionadas
     ├── 20260627_create_volunteers_donations_inventory.sql
-    ├── 20260627_phase3_roles.sql
     ├── 20260628_survivors_add_cedula.sql
     ├── 20260628_survivors_family_reunited.sql
-    └── 20260629_public_api_views.sql   ← API pública
+    ├── 20260629_public_api_views.sql
+    ├── 20260630_buildings_rls_policies.sql
+    └── 20260630_survivors_merge_functions.sql  ← calidad de datos con SECURITY DEFINER
 
 endpoints/                    # Propuestas para redes federadas
 └── README.md                # Documentación de la API pública
@@ -207,10 +216,9 @@ bun run dev          # http://localhost:3000
 
 bun run build        # producción
 bun run lint
-bun run format
 ```
 
-### Variables de entorno (opcionales — hay fallbacks)
+### Variables de entorno
 
 ```bash
 VITE_SUPABASE_URL=https://kqtilzssuynblfkuqxyx.supabase.co
@@ -225,6 +233,8 @@ supabase db push
 
 # O manual: pegar contenido de supabase/migrations/*.sql en Dashboard → SQL Editor
 ```
+
+> ⚠️ Las migraciones de calidad de datos (`20260630_survivors_merge_functions.sql`) requieren la extensión `pg_trgm` activa en la BD.
 
 ---
 
@@ -251,10 +261,18 @@ supabase db push
 
 ### ✅ Fase 4 — Alianzas y datos abiertos (28-29 jun 2026)
 - Módulo `/donaciones` con la **Organización Solo Fe**
-- API pública (4 endpoints REST sobre vistas SQL filtradas)
+- API pública (5 endpoints REST sobre vistas SQL filtradas)
 - Integración con el `endpoint-agent-kit` para registro en redes federadas
 
-### ⏳ Fase 5 — PWA y escala
+### ✅ Fase 5 — Calidad de datos y enriquecimiento (29-30 jun 2026)
+- Módulo **Edificios** (`/edificios`) con geolocalización automática vía Nominatim
+- **Herramienta de calidad de datos** en panel admin: fuzzy matching con `pg_trgm`, limpieza automática de duplicados (umbral configurable)
+- Funciones RPC de fusión con `SECURITY DEFINER` para evitar bloqueos de RLS
+- Integración de métricas externas (red ayudaavzla.com) en hero y `/impacto`
+- Dominio propio: **https://vnzla-ayuda.org**
+- Módulo de sobrevivientes renombrado a `/rescatados` como CTA principal
+
+### ⏳ Fase 6 — PWA y escala
 - [ ] Progressive Web App instalable
 - [ ] Modo offline para zonas con conectividad intermitente
 - [ ] Mapa interactivo con geolocalización
@@ -279,6 +297,7 @@ Este proyecto nació en menos de 24 horas y sigue creciendo cada día. Hay mucho
 ## Aliados
 
 - 🟢 **Organización Solo Fe** — canalización de donaciones (`/donaciones`)
+- 🔗 **Red ayudaavzla.com** — datos federados de sobrevivientes (47.000+ personas registradas)
 - 🔗 **Red `endpoint-agent-kit`** — federación de datos cívicos (`endpoints/`)
 
 ---
@@ -291,5 +310,5 @@ MIT — usá este código libremente para ayudar. Si lo adaptás para otra emerg
 
 <div align="center">
   <strong>Venezuela Ayuda</strong> · Construido el 27 de junio de 2026 ·
-  <a href="https://vnzla-ayuda.vercel.app/">https://vnzla-ayuda.vercel.app/</a>
+  <a href="https://vnzla-ayuda.org/">https://vnzla-ayuda.org/</a>
 </div>

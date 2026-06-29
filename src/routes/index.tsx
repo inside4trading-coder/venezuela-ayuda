@@ -47,9 +47,9 @@ function Landing() {
               etiqueta="Buscas a un familiar"
               titulo="Encuéntralo en el registro de sobrevivientes."
               bullets={[
-                "Base verificada con miles de personas reportadas en hospitales, albergues y refugios.",
-                "Búsqueda por nombre. Confirma identidad con cédula y lugar exacto.",
-                "Antes de movilizarte, valida con el centro — los datos provienen de reportes oficiales.",
+                "Más de 47.000 personas registradas entre nuestra base local y la red ayudaavzla.com.",
+                "Búsqueda por nombre, cédula y ubicación. Filtra por estado físico (estable, herido, crítico).",
+                "Cuando encuentres a tu familiar, márcalo como reunido para liberar el registro.",
               ]}
               cta={{ label: "Buscar en el registro", to: "/rescatados" }}
             />
@@ -59,7 +59,7 @@ function Landing() {
               titulo="Encuentra dónde tu donación rinde hoy."
               bullets={[
                 "Ves en vivo qué necesita cada centro y en qué cantidad.",
-                "Filtras por ciudad y por tipo de ayuda que puedes dar.",
+                "Filtras por ciudad, estado y tipo de ayuda que puedes dar.",
                 "Coordinas directo con el coordinador del centro, sin intermediarios.",
               ]}
               cta={{ label: "Ver qué se necesita", to: "/necesidades" }}
@@ -68,11 +68,11 @@ function Landing() {
               etiqueta="Voluntario"
               titulo="Ofrece tus manos, tus horas o tu oficio."
               bullets={[
-                "Voluntariado presencial en albergues, cocinas y rutas.",
-                "Voluntariado especializado: médicos, paramédicos, logística.",
+                "Roles abiertos por centro: logística, atención médica, cocina, distribución.",
+                "Postúlate directamente desde la plataforma — el coordinador te contacta.",
                 "Eliges turno y centro según tu disponibilidad real.",
               ]}
-              cta={{ label: "Registrarme como voluntario", to: "/voluntarios" }}
+              cta={{ label: "Ver roles disponibles", to: "/voluntarios" }}
             />
             <ActorBlock
               reverse
@@ -81,7 +81,7 @@ function Landing() {
               bullets={[
                 "Albergue, acopio, cocina, punto médico o ruta de distribución.",
                 "Actualizas inventario y necesidades desde el teléfono.",
-                "Recibes ayuda dirigida a lo que de verdad te falta.",
+                "Recibes voluntarios y donaciones dirigidos a lo que de verdad te falta.",
               ]}
               cta={{ label: "Registrar mi centro", to: "/registrar-centro" }}
             />
@@ -89,12 +89,11 @@ function Landing() {
               etiqueta="Empresa o diáspora"
               titulo="Aporta logística, capital o redes desde donde estés."
               bullets={[
-                "Donaciones corporativas a centros de acopio y distribución.",
+                "Canal directo con la Organización Solo Fe para donaciones formales con constancia.",
                 "La diáspora aporta capital; centros locales ejecutan en tierra.",
-                "Visibilidad del destino: ves a qué centro llegó cada aporte.",
+                "Métricas en vivo: 68 centros activos, 47.000+ sobrevivientes registrados en la red.",
               ]}
-              cta={{ label: "Ver acopios y rutas", to: "/centros" }}
-              nota="Próximamente: convenios y constancias formales."
+              cta={{ label: "Ver cómo donar", to: "/donaciones" }}
             />
           </div>
         </div>

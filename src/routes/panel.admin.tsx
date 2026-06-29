@@ -133,19 +133,33 @@ function AdminPanel() {
           patch.zona = discardBuilding.zona;
         }
 
+        let updateSuccess = true;
         if (Object.keys(patch).length > 0) {
-          await supabase.from("buildings").update(patch).eq("id", pair.id_a);
+          const { data: updateData, error: updateErr } = await supabase
+            .from("buildings")
+            .update(patch)
+            .eq("id", pair.id_a)
+            .select();
+          if (updateErr || !updateData || updateData.length === 0) {
+            updateSuccess = false;
+          }
         }
 
-        const { error } = await supabase.from("buildings").delete().eq("id", pair.id_b);
+        if (updateSuccess) {
+          const { data: deleteData, error: deleteErr } = await supabase
+            .from("buildings")
+            .delete()
+            .eq("id", pair.id_b)
+            .select();
 
-        if (!error) {
-          mergedCount++;
-          setDiscardedBuildingKeys((prev) => {
-            const next = new Set(prev);
-            next.add(pairKey);
-            return next;
-          });
+          if (!deleteErr && deleteData && deleteData.length > 0) {
+            mergedCount++;
+            setDiscardedBuildingKeys((prev) => {
+              const next = new Set(prev);
+              next.add(pairKey);
+              return next;
+            });
+          }
         }
       }
 
@@ -248,23 +262,34 @@ function AdminPanel() {
       }
 
       if (Object.keys(patch).length > 0) {
-        const { error: updateErr } = await supabase
+        const { data: updateData, error: updateErr } = await supabase
           .from("buildings")
           .update(patch)
-          .eq("id", keepId);
+          .eq("id", keepId)
+          .select();
         if (updateErr) {
           toast.error("Error al actualizar edificio principal: " + updateErr.message);
           return;
         }
+        if (!updateData || updateData.length === 0) {
+          toast.error("Error: Permiso denegado por la base de datos (RLS) al actualizar.");
+          return;
+        }
       }
 
-      const { error: deleteErr } = await supabase
+      const { data: deleteData, error: deleteErr } = await supabase
         .from("buildings")
         .delete()
-        .eq("id", discardId);
+        .eq("id", discardId)
+        .select();
 
       if (deleteErr) {
         toast.error("Error al eliminar edificio duplicado: " + deleteErr.message);
+        return;
+      }
+
+      if (!deleteData || deleteData.length === 0) {
+        toast.error("Error: Permiso denegado por la base de datos (RLS) al eliminar.");
         return;
       }
 

@@ -43,10 +43,66 @@ function ImpactPage() {
         </p>
       </header>
 
+      {/* Tira de KPIs — misma información que el hero del main */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-0 border border-[var(--color-border)] rounded-xl overflow-hidden divide-x divide-[var(--color-border)]">
+        {/* Centros activos */}
+        <div className="px-6 py-5 space-y-1">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Centros activos
+          </div>
+          <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
+            {(metrics.centrosActivos + (metrics.centrosActivosExternos ?? 0)).toLocaleString("es-VE")}
+          </div>
+          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
+            {metrics.centrosActivos} locales · {metrics.centrosActivosExternos ?? 0} en ayudaavzla.com
+          </div>
+        </div>
+
+        {/* Sobrevivientes */}
+        <div className="px-6 py-5 space-y-1">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Sobrevivientes
+          </div>
+          <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
+            {(metrics.sobrevivientes + (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE")}
+          </div>
+          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
+            {metrics.sobrevivientes.toLocaleString("es-VE")} locales · {(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} en ayudaavzla.com
+          </div>
+        </div>
+
+        {/* A salvo / Reunidas */}
+        <div className="px-6 py-5 space-y-1">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            A salvo / Reunidas
+          </div>
+          <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-emerald-600 dark:text-emerald-400">
+            {(metrics.sobrevivientesASalvoExternos ?? 0).toLocaleString("es-VE")}
+          </div>
+          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
+            Red ayudaavzla.com
+          </div>
+        </div>
+
+        {/* En búsqueda */}
+        <div className="px-6 py-5 space-y-1">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            En búsqueda
+          </div>
+          <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-amber-600 dark:text-amber-400">
+            {(metrics.sobrevivientesBuscandoExternos ?? 0).toLocaleString("es-VE")}
+          </div>
+          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
+            Red ayudaavzla.com
+          </div>
+        </div>
+      </section>
+
+      {/* Métricas secundarias */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <Metric n={metrics.centrosActivos} l="centros activos" />
+        <Metric n={metrics.centrosActivos} l="centros activos (local)" />
         <Metric n={metrics.necesidadesActivas.toLocaleString("es-VE")} l="necesidades activas" />
-        <Metric n={metrics.sobrevivientes.toLocaleString("es-VE")} l="sobrevivientes registrados por la red" />
+        <Metric n={metrics.sobrevivientes.toLocaleString("es-VE")} l="sobrevivientes registrados (local)" />
         <Metric n={metrics.estados} l="estados cubiertos" />
       </section>
 

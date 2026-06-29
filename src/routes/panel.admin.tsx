@@ -90,7 +90,14 @@ function AdminPanel() {
   const [exitingKeys, setExitingKeys] = useState<Set<string>>(new Set());
 
   // Estados para Calidad de Datos de Edificios
-  const [calidadSubTab, setCalidadSubTab] = useState<"sobrevivientes" | "edificios">("sobrevivientes");
+  const [calidadSubTab, setCalidadSubTab] = useState<"sobrevivientes" | "edificios" | "sincronizar">("sobrevivientes");
+  const [syncingCenters, setSyncingCenters] = useState(false);
+  const [syncingSurvivors, setSyncingSurvivors] = useState(false);
+  const [centersProgress, setCentersProgress] = useState(0);
+  const [centersTotal, setCentersTotal] = useState(0);
+  const [survivorsProgress, setSurvivorsProgress] = useState(0);
+  const [survivorsTotal, setSurvivorsTotal] = useState(0);
+  const [syncLog, setSyncLog] = useState<string[]>([]);
   const [buildingsList, setBuildingsList] = useState<any[]>([]);
   const [buildingDuplicates, setBuildingDuplicates] = useState<any[]>([]);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
@@ -488,6 +495,90 @@ function AdminPanel() {
       setRunningCleanup(false);
     }
   };
+  const startSyncCenters = async () => {
+    setSyncingCenters(true);
+    setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Iniciando sincronización de centros...`, ...prev]);
+    setCentersProgress(0);
+    try {
+      const res = await fetch("https://ayudaavzla.com/api/v1/lugares?limit=1");
+      if (!res.ok) throw new Error("Error al consultar API de lugares externos.");
+      const meta = await res.json();
+      const total = meta.total || 0;
+      setCentersTotal(total);
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Total de centros a importar: ${total}`, ...prev]);
+
+      const pageSize = 50;
+      const pages = Math.ceil(total / pageSize);
+
+      for (let p = 1; p <= pages; p++) {
+        setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Consultando página ${p} de centros...`, ...prev]);
+        const pageRes = await fetch(`https://ayudaavzla.com/api/v1/lugares?page=${p}&limit=${pageSize}`);
+        if (!pageRes.ok) throw new Error(`Error en página ${p} de lugares`);
+        const pageData = await pageRes.json();
+        
+        const items = pageData.items || [];
+        if (items.length === 0) break;
+
+        const { error } = await supabase.rpc("sync_external_centers", { batch: items });
+        if (error) throw new Error("Error en Supabase RPC: " + error.message);
+
+        setCentersProgress(prev => Math.min(total, prev + items.length));
+        setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Lote de ${items.length} centros importado y guardado.`, ...prev]);
+      }
+
+      toast.success("Sincronización de centros completada.");
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] ✓ Sincronización de centros finalizada con éxito.`, ...prev]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Error al sincronizar centros: " + err.message);
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] ❌ Error: ${err.message}`, ...prev]);
+    } finally {
+      setSyncingCenters(false);
+    }
+  };
+
+  const startSyncSurvivors = async () => {
+    setSyncingSurvivors(true);
+    setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Iniciando sincronización de sobrevivientes...`, ...prev]);
+    setSurvivorsProgress(0);
+    try {
+      const res = await fetch("https://ayudaavzla.com/api/v1/personas?limit=1");
+      if (!res.ok) throw new Error("Error al consultar API de personas externas.");
+      const meta = await res.json();
+      const total = meta.total || 0;
+      setSurvivorsTotal(total);
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Total de sobrevivientes a importar: ${total}`, ...prev]);
+
+      const pageSize = 1000;
+      const pages = Math.ceil(total / pageSize);
+
+      for (let p = 1; p <= pages; p++) {
+        setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Consultando lote ${p} de ${pages} (1000 registros)...`, ...prev]);
+        const pageRes = await fetch(`https://ayudaavzla.com/api/v1/personas?page=${p}&limit=${pageSize}`);
+        if (!pageRes.ok) throw new Error(`Error en lote ${p} de personas`);
+        const pageData = await pageRes.json();
+        
+        const items = pageData.items || [];
+        if (items.length === 0) break;
+
+        const { error } = await supabase.rpc("sync_external_survivors", { batch: items });
+        if (error) throw new Error("Error en Supabase RPC: " + error.message);
+
+        setSurvivorsProgress(prev => Math.min(total, prev + items.length));
+        setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] Lote ${p} (${items.length} personas) guardado con éxito.`, ...prev]);
+      }
+
+      toast.success("Sincronización de sobrevivientes completada.");
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] ✓ Sincronización de sobrevivientes finalizada con éxito.`, ...prev]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Error al sincronizar sobrevivientes: " + err.message);
+      setSyncLog(prev => [`[${new Date().toLocaleTimeString()}] ❌ Error: ${err.message}`, ...prev]);
+    } finally {
+      setSyncingSurvivors(false);
+    }
+  };
+
 
 
   if (authLoading || profLoading) return <Gate>Cargando…</Gate>;
@@ -867,9 +958,20 @@ function AdminPanel() {
             >
               Edificios (Fuzzy Matching)
             </button>
+            <button
+              type="button"
+              onClick={() => setCalidadSubTab("sincronizar")}
+              className={`px-4 py-2 rounded-md text-[13px] font-display font-semibold transition-all cursor-pointer ${
+                calidadSubTab === "sincronizar"
+                  ? "bg-white dark:bg-gray-800 text-[var(--color-text-main)] shadow-sm border border-gray-150 dark:border-gray-700"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border border-transparent"
+              }`}
+            >
+              Sincronizar Red
+            </button>
           </div>
 
-          {calidadSubTab === "sobrevivientes" ? (
+          {calidadSubTab === "sobrevivientes" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
                 <div>
@@ -1041,7 +1143,8 @@ function AdminPanel() {
                 </div>
               )}
             </div>
-          ) : (
+          )}
+          {calidadSubTab === "edificios" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
                 <div>
@@ -1182,6 +1285,100 @@ function AdminPanel() {
                     })}
                 </div>
               )}
+            </div>
+          )}
+          {calidadSubTab === "sincronizar" && (
+            <div className="space-y-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 shadow-sm">
+              <div className="border-b border-[var(--color-border)] pb-3">
+                <h2 className="font-display font-semibold text-[17px] text-[var(--color-text-main)]">
+                  Sincronización de Datos con Red ayudaavzla.com
+                </h2>
+                <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
+                  Importación bidireccional y unificación de registros locales y externos.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Centros Sincronizador */}
+                <div className="border border-[var(--color-border)] rounded-lg p-5 space-y-4">
+                  <h3 className="font-display font-semibold text-[15px]">Centros de Ayuda y Refugios</h3>
+                  <p className="text-[12px] text-[var(--color-text-muted)] leading-relaxed">
+                    Importa los lugares de acopio, albergues y puntos médicos del registro nacional, incluyendo sus necesidades e inventarios.
+                  </p>
+                  
+                  {syncingCenters && (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span>Progreso</span>
+                        <span>{centersProgress} / {centersTotal} ({Math.round(centersTotal ? (centersProgress / centersTotal) * 100 : 0)}%)</span>
+                      </div>
+                      <div className="w-full bg-[var(--color-surface-alt)] h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-[var(--color-operational)] h-full transition-all duration-300"
+                          style={{ width: `${centersTotal ? (centersProgress / centersTotal) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={startSyncCenters}
+                    disabled={syncingCenters || syncingSurvivors}
+                    className="w-full h-10 px-4 rounded-md bg-[var(--color-operational)] text-white text-[13px] font-display font-semibold transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-sm"
+                  >
+                    {syncingCenters ? "Sincronizando..." : "Sincronizar Centros"}
+                  </button>
+                </div>
+
+                {/* Sobrevivientes Sincronizador */}
+                <div className="border border-[var(--color-border)] rounded-lg p-5 space-y-4">
+                  <h3 className="font-display font-semibold text-[15px]">Sobrevivientes Registrados</h3>
+                  <p className="text-[12px] text-[var(--color-text-muted)] leading-relaxed">
+                    Descarga el registro consolidado de más de 40.000 personas a salvo o en búsqueda activa en todo el país.
+                  </p>
+                  
+                  {syncingSurvivors && (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span>Progreso</span>
+                        <span>{survivorsProgress} / {survivorsTotal} ({Math.round(survivorsTotal ? (survivorsProgress / survivorsTotal) * 100 : 0)}%)</span>
+                      </div>
+                      <div className="w-full bg-[var(--color-surface-alt)] h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-[var(--color-operational)] h-full transition-all duration-300"
+                          style={{ width: `${survivorsTotal ? (survivorsProgress / survivorsTotal) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={startSyncSurvivors}
+                    disabled={syncingCenters || syncingSurvivors}
+                    className="w-full h-10 px-4 rounded-md bg-[var(--color-operational)] text-white text-[13px] font-display font-semibold transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-sm"
+                  >
+                    {syncingSurvivors ? "Sincronizando..." : "Sincronizar Sobrevivientes"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Registro de Sincronización */}
+              <div className="space-y-2 pt-2">
+                <h4 className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">Consola de Sincronización</h4>
+                <div className="bg-[var(--color-surface-alt)] border border-[var(--color-border)] rounded-lg p-4 font-mono text-[11.5px] h-48 overflow-y-auto space-y-1.5 text-[var(--color-text-muted)]">
+                  {syncLog.length === 0 ? (
+                    <div className="italic text-gray-400">Ninguna actividad de sincronización iniciada aún.</div>
+                  ) : (
+                    syncLog.map((log, index) => (
+                      <div key={index} className={log.includes("❌") ? "text-red-500 font-semibold" : log.includes("✓") ? "text-emerald-500 font-semibold" : ""}>
+                        {log}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

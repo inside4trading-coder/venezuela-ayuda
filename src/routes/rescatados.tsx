@@ -128,7 +128,7 @@ function RescatadosPage() {
                 : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
             }`}
           >
-            Registro Local
+            Registro Consolidado (Local + Importados)
           </button>
           <button
             onClick={() => {

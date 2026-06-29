@@ -436,17 +436,43 @@ function AdminPanel() {
 
   const triggerAutoCleanup = async () => {
     setRunningCleanup(true);
+    let mergedCount = 0;
     try {
-      const { data, error } = await supabase.rpc("merge_exact_duplicate_survivors");
-      if (error) {
-        toast.error("Error al ejecutar la limpieza automática: " + error.message);
-      } else {
-        toast.success(`Se fusionaron ${data ?? 0} registros duplicados`);
-        loadDuplicates();
+      const toMerge = duplicates.filter(
+        (d) => d.similitud >= 0.95 && !discardedKeys.has(`${d.id_a}-${d.id_b}`)
+      );
+
+      for (const pair of toMerge) {
+        const pairKey = `${pair.id_a}-${pair.id_b}`;
+        if (discardedKeys.has(pairKey)) continue;
+
+        let keepId = pair.id_a;
+        let discardId = pair.id_b;
+        if (!pair.cedula_a && pair.cedula_b) {
+          keepId = pair.id_b;
+          discardId = pair.id_a;
+        }
+
+        const { error } = await supabase.rpc("merge_survivors", {
+          keep_id: keepId,
+          discard_id: discardId,
+        });
+
+        if (!error) {
+          mergedCount++;
+          setDiscardedKeys((prev) => {
+            const next = new Set(prev);
+            next.add(pairKey);
+            return next;
+          });
+        }
       }
+
+      toast.success(`Se fusionaron ${mergedCount} registros duplicados automáticamente.`);
+      loadDuplicates();
     } catch (err: any) {
       console.error(err);
-      toast.error("Error de red al ejecutar limpieza.");
+      toast.error("Ocurrió un error al realizar la limpieza automática.");
     } finally {
       setRunningCleanup(false);
     }

@@ -437,28 +437,35 @@ function AdminPanel() {
   const triggerAutoCleanup = async () => {
     setRunningCleanup(true);
     let mergedCount = 0;
+    let errorCount = 0;
     try {
+      // Threshold bajado a 0.90 para capturar pares muy similares aunque no sean idénticos
       const toMerge = duplicates.filter(
-        (d) => d.similitud >= 0.95 && !discardedKeys.has(`${d.id_a}-${d.id_b}`)
+        (d) => d.similitud >= 0.90 && !discardedKeys.has(`${d.id_a}-${d.id_b}`)
       );
+
+      if (toMerge.length === 0) {
+        toast.info("No hay pares con similitud ≥ 90% pendientes de fusión.");
+        return;
+      }
 
       for (const pair of toMerge) {
         const pairKey = `${pair.id_a}-${pair.id_b}`;
         if (discardedKeys.has(pairKey)) continue;
 
-        let keepId = pair.id_a;
-        let discardId = pair.id_b;
-        if (!pair.cedula_a && pair.cedula_b) {
-          keepId = pair.id_b;
-          discardId = pair.id_a;
-        }
+        // Conservar el que tenga cédula; si ambos o ninguno, conservar id_a
+        const keepId   = (!pair.cedula_a && pair.cedula_b) ? pair.id_b : pair.id_a;
+        const discardId = keepId === pair.id_a ? pair.id_b : pair.id_a;
 
         const { error } = await supabase.rpc("merge_survivors", {
           keep_id: keepId,
           discard_id: discardId,
         });
 
-        if (!error) {
+        if (error) {
+          console.error(`Error fusionando par ${pairKey}:`, error.message);
+          errorCount++;
+        } else {
           mergedCount++;
           setDiscardedKeys((prev) => {
             const next = new Set(prev);
@@ -468,7 +475,12 @@ function AdminPanel() {
         }
       }
 
-      toast.success(`Se fusionaron ${mergedCount} registros duplicados automáticamente.`);
+      if (mergedCount > 0) {
+        toast.success(`Se fusionaron ${mergedCount} registros duplicados automáticamente.`);
+      }
+      if (errorCount > 0) {
+        toast.error(`${errorCount} pares no pudieron fusionarse. Revisa la consola para más detalles.`);
+      }
       loadDuplicates();
     } catch (err: any) {
       console.error(err);
@@ -477,6 +489,7 @@ function AdminPanel() {
       setRunningCleanup(false);
     }
   };
+
 
   if (authLoading || profLoading) return <Gate>Cargando…</Gate>;
 

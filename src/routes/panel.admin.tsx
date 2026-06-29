@@ -81,25 +81,13 @@ function AdminPanel() {
   // Estados para "Calidad de Datos"
   const [activeTab, setActiveTab] = useState<"general" | "calidad">("general");
   const [loadingDuplicates, setLoadingDuplicates] = useState(false);
-  const [limitCount, setLimitCount] = useState(50);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [discardedKeys, setDiscardedKeys] = useState<Set<string>>(new Set());
   const [mergingId, setMergingId] = useState<string | null>(null);
   const [runningCleanup, setRunningCleanup] = useState(false);
-
-  const GRAVITY_RANK: Record<string, number> = {
-    fallecido: 5,
-    critico: 4,
-    herido_grave: 3,
-    herido_leve: 2,
-    estable: 1,
-  };
-
-  const getMoreGrave = (a: string, b: string): string => {
-    const rA = GRAVITY_RANK[a] ?? 0;
-    const rB = GRAVITY_RANK[b] ?? 0;
-    return rA >= rB ? a : b;
-  };
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [exitingKeys, setExitingKeys] = useState<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true);
@@ -161,24 +149,21 @@ function AdminPanel() {
     load();
   }, [isAdmin]);
 
-  const loadDuplicates = async (limit = 50) => {
+  const loadDuplicates = async () => {
     setLoadingDuplicates(true);
+    setLoadError(null);
     try {
-      const { data, error } = await supabase
-        .from("survivors_duplicate_candidates")
-        .select("*")
-        .gte("name_similarity", 0.80)
-        .order("name_similarity", { ascending: false })
-        .limit(limit);
+      const { data, error } = await supabase.rpc("find_duplicate_survivors");
 
       if (error) {
         console.error("loadDuplicates error:", error);
-        toast.error("Error al cargar duplicados");
+        setLoadError(error.message || "Error al cargar duplicados");
       } else {
         setDuplicates(data ?? []);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setLoadError(err.message || "Error al cargar duplicados");
     } finally {
       setLoadingDuplicates(false);
     }
@@ -186,55 +171,40 @@ function AdminPanel() {
 
   useEffect(() => {
     if (isAdmin && activeTab === "calidad") {
-      loadDuplicates(limitCount);
+      loadDuplicates();
     }
-  }, [isAdmin, activeTab, limitCount]);
+  }, [isAdmin, activeTab]);
 
-  const mergeCandidates = async (
-    keepId: string,
-    deleteId: string,
-    keepName: string,
-    keepLoc: string,
-    keepState: string,
-    keepDesc: string,
-    deleteState: string,
-    deleteDesc: string,
-    pairKey: string
-  ) => {
+  const mergeDuplicates = async (keepId: string, discardId: string, pairKey: string) => {
     setMergingId(keepId);
     try {
-      let mergedDesc = keepDesc;
-      if (deleteDesc && deleteDesc.trim() && keepDesc !== deleteDesc) {
-        mergedDesc = keepDesc ? `${keepDesc.trim()} | ${deleteDesc.trim()}` : deleteDesc.trim();
+      const { error } = await supabase.rpc("merge_survivors", {
+        keep_id: keepId,
+        discard_id: discardId,
+      });
+
+      if (error) {
+        toast.error("Error al fusionar registros: " + error.message);
+      } else {
+        toast.success("Fusionado correctamente");
+        
+        // Registrar exiting key para animación fade-out
+        setExitingKeys((prev) => {
+          const next = new Set(prev);
+          next.add(pairKey);
+          return next;
+        });
+
+        // Esperar la duración de la animación (300ms) y retirar del estado local
+        setTimeout(() => {
+          setDuplicates((prev) => prev.filter((d) => `${d.id_a}-${d.id_b}` !== pairKey));
+          setExitingKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(pairKey);
+            return next;
+          });
+        }, 300);
       }
-
-      const finalState = getMoreGrave(keepState, deleteState);
-
-      const { error: updateError } = await supabase
-        .from("survivors")
-        .update({
-          descripcion: mergedDesc || null,
-          estado_fisico: finalState,
-        })
-        .eq("id", keepId);
-
-      if (updateError) {
-        toast.error("Error al actualizar registro conservado: " + updateError.message);
-        return;
-      }
-
-      const { error: deleteError } = await supabase
-        .from("survivors")
-        .delete()
-        .eq("id", deleteId);
-
-      if (deleteError) {
-        toast.error("Error al eliminar registro duplicado: " + deleteError.message);
-        return;
-      }
-
-      toast.success("Registros fusionados con éxito");
-      setDuplicates((prev) => prev.filter((d) => `${d.id_a}-${d.id_b}` !== pairKey));
     } catch (err: any) {
       console.error(err);
       toast.error("Ocurrió un error inesperado al fusionar.");
@@ -243,15 +213,15 @@ function AdminPanel() {
     }
   };
 
-  const runAutoCleanup = async () => {
+  const triggerAutoCleanup = async () => {
     setRunningCleanup(true);
     try {
       const { data, error } = await supabase.rpc("merge_exact_duplicate_survivors");
       if (error) {
         toast.error("Error al ejecutar la limpieza automática: " + error.message);
       } else {
-        toast.success(`Limpieza completada: se fusionaron ${data ?? 0} grupos de duplicados.`);
-        loadDuplicates(limitCount);
+        toast.success(`Se fusionaron ${data ?? 0} registros duplicados`);
+        loadDuplicates();
       }
     } catch (err: any) {
       console.error(err);
@@ -620,21 +590,41 @@ function AdminPanel() {
                 Calidad de Datos — Sobrevivientes Duplicados
               </h2>
               <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
-                {visibleDuplicates.length} {visibleDuplicates.length === 1 ? "par de registros similares pendiente" : "pares de registros similares pendientes"} de revisión
+                {visibleDuplicates.length} {visibleDuplicates.length === 1 ? "par pendiente" : "pares pendientes"} de revisión
               </p>
             </div>
             <button
               type="button"
-              onClick={runAutoCleanup}
+              onClick={() => setShowConfirmModal(true)}
               disabled={runningCleanup || loadingDuplicates}
-              className="px-4 h-9 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-semibold rounded-md transition-all disabled:opacity-50 cursor-pointer"
+              className="px-4 h-9 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-semibold rounded-md transition-all disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {runningCleanup ? "Limpiando..." : "Ejecutar limpieza automática"}
             </button>
           </div>
 
-          {loadingDuplicates && duplicates.length === 0 ? (
+          {loadError ? (
+            <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 p-8 text-center space-y-4 max-w-[600px] mx-auto mt-6 shadow-sm">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 text-red-650 dark:text-red-300 text-xl font-bold">
+                !
+              </div>
+              <h3 className="font-display font-semibold text-[16px] text-red-800 dark:text-red-300">
+                Error al cargar duplicados
+              </h3>
+              <p className="text-[13px] text-red-700 dark:text-red-400">
+                {loadError}
+              </p>
+              <button
+                type="button"
+                onClick={() => loadDuplicates()}
+                className="px-4 py-2 bg-[var(--color-critical)] text-white rounded-md text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-colors shadow-sm"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : loadingDuplicates && duplicates.length === 0 ? (
             <div className="space-y-4">
+              <DuplicateCardSkeleton />
               <DuplicateCardSkeleton />
               <DuplicateCardSkeleton />
             </div>
@@ -647,151 +637,157 @@ function AdminPanel() {
                 Base de datos limpia
               </h3>
               <p className="text-[13px] text-emerald-700 dark:text-emerald-400">
-                ✅ Base de datos limpia — no se detectaron registros similares.
+                No se detectaron registros similares de sobrevivientes.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {visibleDuplicates.map((d) => {
                 const pairKey = `${d.id_a}-${d.id_b}`;
-                const isDiscarded = discardedKeys.has(pairKey);
-                const pct = Math.round(d.name_similarity * 100);
-                const isVerySimilar = d.name_similarity >= 0.95;
-                const isSameLoc = d.location_a === d.location_b && d.location_a;
-                const diffState = d.estado_a !== d.estado_b;
+                const isExiting = exitingKeys.has(pairKey);
+                const pct = Math.round(d.similitud * 100);
+
+                const getSimilarityColor = (sim: number) => {
+                  if (sim >= 0.95) {
+                    return "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900";
+                  }
+                  if (sim >= 0.85) {
+                    return "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900";
+                  }
+                  return "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900";
+                };
+
+                const colorClasses = getSimilarityColor(d.similitud);
 
                 return (
                   <article
                     key={pairKey}
-                    className={`rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4 transition-all relative ${
-                      isDiscarded ? "opacity-60" : ""
+                    className={`rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4 transition-all duration-300 transform ${
+                      isExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"
                     }`}
                   >
                     {/* Header */}
                     <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[var(--color-border)] pb-2 text-[12px]">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[14px]">
-                          Similitud: {pct}%
-                        </span>
-                        {isVerySimilar ? (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-medium">
-                            Casi idénticos
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-medium">
-                            Similares
-                          </span>
-                        )}
-                        {isSameLoc && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-medium">
-                            📍 Mismo centro
-                          </span>
-                        )}
-                      </div>
-                      {isDiscarded && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-gray-150 text-gray-700 dark:bg-gray-800 dark:text-gray-400 font-semibold font-display">
-                          Descartado
-                        </span>
-                      )}
+                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
+                        POSIBLE DUPLICADO
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${colorClasses}`}>
+                        Similitud: {pct}%
+                      </span>
                     </div>
 
                     {/* Columns */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px]">
                       {/* Registro A */}
-                      <div className="space-y-2">
-                        <div className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
-                          Registro A
-                        </div>
-                        <div className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                          {d.name_a}
-                        </div>
-                        <div className="text-[13px] text-[var(--color-text-muted)]">
-                          📍 {d.location_a || "Ubicación desconocida"}
-                        </div>
-                        <div className={`p-2 rounded-md ${diffState ? "bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900" : "bg-[var(--color-bg)]"}`}>
-                          <span className="text-[var(--color-text-muted)] text-[12px]">Estado físico:</span>
-                          <span className={`ml-1.5 font-semibold ${diffState ? "text-orange-700 dark:text-orange-400 animate-pulse" : "text-[var(--color-text-main)]"}`}>
-                            {d.estado_a || "No especificado"}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                            A
                           </span>
+                          <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                            {d.nombre_a}
+                          </h4>
                         </div>
-                        {d.desc_a && (
-                          <p className="text-[var(--color-text-muted)] italic text-[12px] bg-[var(--color-bg)] p-2 rounded">
-                            "{d.desc_a}"
-                          </p>
-                        )}
+                        <p className="text-[13px] text-[var(--color-text-muted)]">
+                          {d.estado_a || "Estado desconocido"} · {d.ubicacion_a || "Ubicación no registrada"}
+                        </p>
+                        <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
+                          {d.cedula_a ? `Cédula: ${d.cedula_a}` : "Sin cédula"}
+                        </p>
                       </div>
 
                       {/* Registro B */}
-                      <div className="space-y-2 md:border-l md:border-[var(--color-border)] md:pl-6">
-                        <div className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
-                          Registro B
-                        </div>
-                        <div className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                          {d.name_b}
-                        </div>
-                        <div className="text-[13px] text-[var(--color-text-muted)]">
-                          📍 {d.location_b || "Ubicación desconocida"}
-                        </div>
-                        <div className={`p-2 rounded-md ${diffState ? "bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900" : "bg-[var(--color-bg)]"}`}>
-                          <span className="text-[var(--color-text-muted)] text-[12px]">Estado físico:</span>
-                          <span className={`ml-1.5 font-semibold ${diffState ? "text-orange-700 dark:text-orange-400 animate-pulse" : "text-[var(--color-text-main)]"}`}>
-                            {d.estado_b || "No especificado"}
+                      <div className="space-y-1.5 md:text-right md:border-l md:border-[var(--color-border)] md:pl-6">
+                        <div className="flex items-center gap-2 md:justify-end">
+                          <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                            {d.nombre_b}
+                          </h4>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                            B
                           </span>
                         </div>
-                        {d.desc_b && (
-                          <p className="text-[var(--color-text-muted)] italic text-[12px] bg-[var(--color-bg)] p-2 rounded">
-                            "{d.desc_b}"
-                          </p>
-                        )}
+                        <p className="text-[13px] text-[var(--color-text-muted)]">
+                          {d.estado_b || "Estado desconocido"} · {d.ubicacion_b || "Ubicación no registrada"}
+                        </p>
+                        <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
+                          {d.cedula_b ? `Cédula: ${d.cedula_b}` : "Sin cédula"}
+                        </p>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    {!isDiscarded && (
-                      <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--color-border)]">
-                        <button
-                          type="button"
-                          onClick={() => mergeCandidates(d.id_a, d.id_b, d.name_a, d.location_a || "", d.estado_a, d.desc_a || "", d.estado_b, d.desc_b || "", pairKey)}
-                          disabled={mergingId !== null}
-                          className="h-9 px-4 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                        >
-                          Fusionar — mantener A
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => mergeCandidates(d.id_b, d.id_a, d.name_b, d.location_b || "", d.estado_b, d.desc_b || "", d.estado_a, d.desc_a || "", pairKey)}
-                          disabled={mergingId !== null}
-                          className="h-9 px-4 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                        >
-                          Fusionar — mantener B
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDiscardedKeys((prev) => { const next = new Set(prev); next.add(pairKey); return next; })}
-                          disabled={mergingId !== null}
-                          className="h-9 px-4 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-medium transition-all disabled:opacity-50 cursor-pointer"
-                        >
-                          Son personas distintas
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--color-border)]">
+                      <button
+                        type="button"
+                        onClick={() => mergeDuplicates(d.id_a, d.id_b, pairKey)}
+                        disabled={mergingId !== null}
+                        className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                      >
+                        Conservar A
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => mergeDuplicates(d.id_b, d.id_a, pairKey)}
+                        disabled={mergingId !== null}
+                        className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                      >
+                        Conservar B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDiscardedKeys((prev) => {
+                            const next = new Set(prev);
+                            next.add(pairKey);
+                            return next;
+                          });
+                        }}
+                        disabled={mergingId !== null}
+                        className="h-9 px-4 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-medium transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                      >
+                        No es duplicado
+                      </button>
+                    </div>
                   </article>
                 );
               })}
-
-              {visibleDuplicates.length >= limitCount && (
-                <div className="text-center pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setLimitCount((prev) => prev + 50)}
-                    className="px-4 h-10 border border-[var(--color-border)] rounded-md text-[13px] bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)] font-display font-semibold cursor-pointer transition-colors"
-                  >
-                    Cargar más candidatos
-                  </button>
-                </div>
-              )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Limpieza Automática */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl max-w-[440px] w-full p-6 space-y-6 shadow-xl animate-scale-in">
+            <div className="space-y-2">
+              <h3 className="font-display font-semibold text-[18px] text-[var(--color-text-main)]">
+                Confirmar Limpieza Automática
+              </h3>
+              <p className="text-[13px] text-[var(--color-text-muted)] leading-relaxed">
+                Se fusionarán automáticamente los pares con similitud <strong className="text-[var(--color-critical)] font-semibold">≥ 95%</strong>. Esta acción no se puede deshacer. ¿Continuar?
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 rounded-md border border-[var(--color-border)] text-[13px] font-display font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  triggerAutoCleanup();
+                }}
+                className="px-4 py-2 rounded-md bg-[var(--color-critical)] text-white text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-all shadow-sm"
+              >
+                Confirmar y limpiar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -800,10 +796,10 @@ function AdminPanel() {
 
 function DuplicateCardSkeleton() {
   return (
-    <div className="p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg space-y-4 animate-pulse">
-      <div className="flex justify-between">
+    <div className="p-5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg space-y-4 animate-pulse shadow-sm h-48 flex flex-col justify-between">
+      <div className="flex justify-between items-center pb-2 border-b border-[var(--color-border)]">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/5"></div>
+        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -816,6 +812,11 @@ function DuplicateCardSkeleton() {
           <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
           <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
         </div>
+      </div>
+      <div className="flex gap-2 pt-3 border-t border-[var(--color-border)]">
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-28"></div>
       </div>
     </div>
   );

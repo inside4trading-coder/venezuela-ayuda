@@ -3,8 +3,10 @@ import { useState, useMemo } from "react";
 import { Select } from "@/components/ui-vh/Field";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
 import { useSurvivors, type Survivor } from "@/hooks/useSurvivors";
+import { useExternalSurvivors } from "@/hooks/useExternalSurvivors";
 import { SurvivorDetailDialog } from "@/components/rescatados/SurvivorDetailDialog";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+
 
 export const Route = createFileRoute("/rescatados")({
   head: () => ({
@@ -38,6 +40,7 @@ function getEstadoFisicoBadge(estado: string) {
 }
 
 function RescatadosPage() {
+  const [source, setSource] = useState<"local" | "external">("local");
   const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
   const [survivorSearch, setSurvivorSearch] = useState<string>("");
   const [survivorState, setSurvivorState] = useState<string>("");
@@ -45,7 +48,7 @@ function RescatadosPage() {
   const [hideReunited, setHideReunited] = useState<boolean>(false);
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
-  const survivorFilters = useMemo(
+  const localFilters = useMemo(
     () => ({
       search: survivorSearch || undefined,
       state: survivorState || undefined,
@@ -57,8 +60,35 @@ function RescatadosPage() {
     [survivorSearch, survivorState, survivorPage, hideReunited, refreshKey],
   );
 
-  const { items: survivors, totalCount: totalSurvivors, loading: loadingSurvivors } =
-    useSurvivors(survivorFilters);
+  const externalFilters = useMemo(
+    () => ({
+      search: survivorSearch || undefined,
+      state: survivorState || undefined,
+      page: survivorPage,
+      pageSize: 10,
+    }),
+    [survivorSearch, survivorState, survivorPage],
+  );
+
+  const { items: localSurvivors, totalCount: localTotal, loading: localLoading } =
+    useSurvivors(localFilters);
+
+  const { items: externalSurvivors, totalCount: externalTotal, loading: externalLoading, error: externalError } =
+    useExternalSurvivors(externalFilters);
+
+  const survivors = useMemo(() => {
+    if (source === "local") {
+      return localSurvivors;
+    } else {
+      if (hideReunited) {
+        return externalSurvivors.filter((s) => !s.reunited_at);
+      }
+      return externalSurvivors;
+    }
+  }, [source, localSurvivors, externalSurvivors, hideReunited]);
+
+  const totalSurvivors = source === "local" ? localTotal : (hideReunited ? survivors.length : externalTotal);
+  const loadingSurvivors = source === "local" ? localLoading : externalLoading;
 
   const totalPages = Math.max(1, Math.ceil(totalSurvivors / 10));
 
@@ -84,6 +114,52 @@ function RescatadosPage() {
             Información cargada desde reportes oficiales de centros médicos y albergues.
           </p>
         </div>
+
+        {/* Pestañas de Origen */}
+        <div className="flex border-b border-[var(--color-border)] mb-6">
+          <button
+            onClick={() => {
+              setSource("local");
+              setSurvivorPage(1);
+            }}
+            className={`px-5 py-3 text-[14px] font-display font-medium border-b-2 transition-all -mb-px cursor-pointer ${
+              source === "local"
+                ? "border-emerald-600 text-emerald-600 font-semibold"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+            }`}
+          >
+            Registro Local
+          </button>
+          <button
+            onClick={() => {
+              setSource("external");
+              setSurvivorPage(1);
+            }}
+            className={`px-5 py-3 text-[14px] font-display font-medium border-b-2 transition-all -mb-px flex items-center gap-2 cursor-pointer ${
+              source === "external"
+                ? "border-[#1f6fb2] text-[#1f6fb2] font-semibold"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+            }`}
+          >
+            Red ayudaavzla.com
+            <span className="text-[10px] bg-sky-100 text-sky-855 dark:bg-sky-950 dark:text-sky-300 px-1.5 py-0.5 rounded font-mono font-normal">
+              Externo
+            </span>
+          </button>
+        </div>
+
+        {/* Alerta informativa para la base externa */}
+        {source === "external" && (
+          <div className="rounded-xl border border-sky-200 dark:border-sky-950 bg-sky-50 dark:bg-sky-950/20 p-4 text-[13px] text-sky-800 dark:text-sky-300 flex items-start gap-3 shadow-sm">
+            <span className="text-lg leading-none mt-0.5" aria-hidden="true">ℹ️</span>
+            <div>
+              <p className="font-semibold font-display">Conexión directa a ayudaavzla.com</p>
+              <p className="mt-0.5 text-sky-700 dark:text-sky-400">
+                Estás consultando en tiempo real la base de datos abierta de ayudaavzla.com. Esta información es administrada por voluntarios externos. Si encuentras a un familiar, por favor confirma sus datos con el centro de ayuda de origen.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_240px] gap-4">
           <div className="relative">
@@ -131,6 +207,12 @@ function RescatadosPage() {
           Ocultar reunidos con familia
         </label>
 
+        {source === "external" && externalError && (
+          <div className="p-4 border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-300 rounded-lg text-sm">
+            {externalError}
+          </div>
+        )}
+
         {loadingSurvivors ? (
           <p className="text-[13px] text-[var(--color-text-muted)]">Cargando sobrevivientes...</p>
         ) : survivors.length === 0 ? (
@@ -157,12 +239,19 @@ function RescatadosPage() {
                       className="hover:bg-[var(--color-surface-alt)]/50 transition-colors cursor-pointer"
                     >
                       <td className="p-3 font-semibold text-[var(--color-text-main)]">
-                        <span>{s.full_name}</span>
-                        {s.reunited_at && (
-                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 align-middle">
-                            ✓ Reunido
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span>{s.full_name}</span>
+                          {s.reunited_at && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+                              ✓ Reunido
+                            </span>
+                          )}
+                          {s.registered_by === "ayudaavzla.com" && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 text-sky-850 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-900 font-mono">
+                              ayudaavzla.com
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
                         <span className="block text-[var(--color-text-main)]">

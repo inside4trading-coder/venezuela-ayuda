@@ -208,7 +208,7 @@ export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
                 "{survivor.reunited_note}"
               </p>
             )}
-            {isAdmin && (
+            {isAdmin && survivor.registered_by !== "ayudaavzla.com" && (
               <button
                 type="button"
                 onClick={handleUnmark}
@@ -295,7 +295,24 @@ export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
 
         {!isReunited && (
           <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-            {user ? (
+            {survivor.registered_by === "ayudaavzla.com" ? (
+              <div className="rounded-md border border-sky-100 dark:border-sky-950 bg-sky-50/50 dark:bg-sky-950/10 px-4 py-3 text-[13px] text-sky-850 dark:text-sky-350">
+                <p className="font-semibold text-[14px]">Registro Externo (Lectura)</p>
+                <p className="mt-1 text-sky-700 dark:text-sky-400">
+                  Este registro proviene de **ayudaavzla.com**. Para notificar una reunificación familiar, debes hacerlo directamente en su plataforma.
+                </p>
+                {survivor.source_url && (
+                  <a
+                    href={survivor.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2.5 inline-flex items-center gap-1 text-[12px] font-semibold text-[#1f6fb2] hover:underline"
+                  >
+                    Ver en ayudaavzla.com <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+              </div>
+            ) : user ? (
               confirming ? (
                 <div className="space-y-2">
                   <label className="block text-[12px] font-medium text-[var(--color-text-main)]">

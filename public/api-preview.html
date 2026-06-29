@@ -142,9 +142,15 @@ const ENDPOINTS = [
   },
   {
     id: "inventory_public",
-    title: "Inventario / Necesidades",
+    title: "Inventario (lo que el centro TIENE)",
     kind: "general",
-    desc: "Todos los items. Los de centros no verificados llevan tag 'centro_no_verificado' y verified=false."
+    desc: "Stock real por centro. Los items de centros no verificados llevan tag 'centro_no_verificado' y verified=false."
+  },
+  {
+    id: "needs_public",
+    title: "Necesidades (lo que el centro PIDE)",
+    kind: "general",
+    desc: "Solicitudes activas por centro, con nivel ('critico'/'alto'/'medio'/'bajo') en tags. Tag 'urgente' cuando nivel es 'critico' o 'alto'. Filtrar urgentes: ?tags=cs.{urgente}."
   },
   {
     id: "volunteer_roles_public",

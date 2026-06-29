@@ -1,0 +1,34 @@
+{
+  "source_name": "Venezuela Ayuda — Necesidades de Centros",
+  "kind": "general",
+  "endpoint_url": "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/needs_public",
+  "http_method": "GET",
+  "auth_type": "api_key",
+  "auth_header": "apikey",
+  "extra_headers": {
+    "Authorization": "Bearer <APIKEY>",
+    "Accept-Profile": "public"
+  },
+  "pagination": {
+    "style": "offset",
+    "limit_param": "limit",
+    "offset_param": "offset",
+    "page_size": 100
+  },
+  "data_path": "",
+  "field_mapping": {
+    "title": "title",
+    "summary": "summary",
+    "organization": "organization",
+    "city": "city",
+    "state": "state",
+    "country": "country",
+    "verified": "verified",
+    "observed_at": "observed_at",
+    "updated_at": "updated_at",
+    "source_record_id": "source_record_id",
+    "tags": "tags"
+  },
+  "contact_email": "hola@musacreativo.com",
+  "notes": "Necesidades activas que cada centro pide. Distinto de inventory_public (lo que el centro TIENE). Tags incluyen el nivel ('critico'|'alto'|'medio'|'bajo') y un tag derivado 'urgente' cuando nivel está en ('critico','alto'). Filtrar prioridad alta: ?tags=cs.{urgente}. Incluye necesidades de centros no verificados (tag 'centro_no_verificado', verified=false). summary es texto libre (cantidad aproximada, ej. '10 cajas'). observed_at/updated_at derivan del centro porque needs no tiene timestamps propios. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+}

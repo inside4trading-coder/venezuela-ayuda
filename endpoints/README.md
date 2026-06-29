@@ -33,10 +33,15 @@ curl -H "apikey: $APIKEY" \
 |----------------------|--------------------------------------|-------------------------|
 | Sobrevivientes       | `BASE/survivors_public?select=*`     | `persona-desaparecida`  |
 | Centros de acopio    | `BASE/centers_public?select=*`       | `general`               |
-| Inventario / necesidades | `BASE/inventory_public?select=*` | `general`               |
+| Inventario (lo que el centro TIENE) | `BASE/inventory_public?select=*` | `general`               |
+| Necesidades (lo que el centro PIDE) | `BASE/needs_public?select=*`     | `general`               |
 | Roles de voluntariado | `BASE/volunteer_roles_public?select=*` | `general`            |
 
 Paginación PostgREST: `?limit=50&offset=0`. Max recomendado: `limit=200`.
+
+**Nota: `inventory_public` vs `needs_public`** — son conceptos distintos:
+- `inventory_public` = lo que el centro **tiene** en stock (con `status`: 'ok' / 'bajo' / 'critico')
+- `needs_public` = lo que el centro **pide** explícitamente (con `nivel` dentro de `tags`: 'critico' / 'alto' / 'medio' / 'bajo' + tag derivado 'urgente' para los dos primeros)
 
 ## Garantías de privacidad
 
@@ -48,9 +53,9 @@ Paginación PostgREST: `?limit=50&offset=0`. Max recomendado: `limit=200`.
 
 Las vistas exponen **todos** los registros, verificados o no. El consumidor distingue mediante:
 
-- Campo booleano `verified` (presente en las 4 vistas).
+- Campo booleano `verified` (presente en las 5 vistas).
 - Tag `'no_verificado'` en el array `tags` de `survivors_public` y `centers_public`.
-- Tag `'centro_no_verificado'` en `inventory_public` y `volunteer_roles_public` cuando el centro asociado no está verificado.
+- Tag `'centro_no_verificado'` en `inventory_public`, `needs_public` y `volunteer_roles_public` cuando el centro asociado no está verificado.
 
 Esto permite que apps consumidoras decidan: mostrar todo y marcar los no verificados, o filtrar por `verified=eq.true` en su URL.
 
@@ -59,7 +64,7 @@ Esto permite que apps consumidoras decidan: mostrar todo y marcar los no verific
 ```bash
 ANON=sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8
 URL=https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1
-for v in survivors_public centers_public inventory_public volunteer_roles_public; do
+for v in survivors_public centers_public inventory_public needs_public volunteer_roles_public; do
   echo "=== $v ==="
   curl -s \
     -H "apikey: $ANON" \
@@ -74,7 +79,7 @@ PowerShell equivalente:
 ```powershell
 $ANON = "sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8"
 $URL  = "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1"
-foreach ($v in @("survivors_public","centers_public","inventory_public","volunteer_roles_public")) {
+foreach ($v in @("survivors_public","centers_public","inventory_public","needs_public","volunteer_roles_public")) {
   Write-Host "=== $v ===" -ForegroundColor Cyan
   curl.exe -s `
     -H "apikey: $ANON" `
@@ -139,7 +144,7 @@ Las vistas son aditivas. Para retirar todo:
 drop view if exists public.survivors_public;
 drop view if exists public.centers_public;
 drop view if exists public.inventory_public;
-drop view if exists public.donations_public;
+drop view if exists public.needs_public;
 drop view if exists public.volunteer_roles_public;
 ```
 

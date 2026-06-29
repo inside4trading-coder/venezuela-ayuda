@@ -75,7 +75,8 @@ Para que medios, ONG, otras apps y la red federada del [`endpoint-agent-kit`](ht
 |---|---|---|
 | Sobrevivientes (sin PII) | `/rest/v1/survivors_public` | `persona-desaparecida` |
 | Centros de acopio | `/rest/v1/centers_public` | `general` |
-| Inventario / necesidades | `/rest/v1/inventory_public` | `general` |
+| Inventario (lo que el centro **tiene**) | `/rest/v1/inventory_public` | `general` |
+| Necesidades (lo que el centro **pide**) | `/rest/v1/needs_public` | `general` |
 | Roles de voluntariado | `/rest/v1/volunteer_roles_public` | `general` |
 
 **Host:** `https://kqtilzssuynblfkuqxyx.supabase.co`

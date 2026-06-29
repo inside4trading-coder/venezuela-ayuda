@@ -439,13 +439,12 @@ function AdminPanel() {
     let mergedCount = 0;
     let errorCount = 0;
     try {
-      // Threshold bajado a 0.90 para capturar pares muy similares aunque no sean idénticos
       const toMerge = duplicates.filter(
-        (d) => d.similitud >= 0.90 && !discardedKeys.has(`${d.id_a}-${d.id_b}`)
+        (d) => d.similitud >= 0.78 && !discardedKeys.has(`${d.id_a}-${d.id_b}`)
       );
 
       if (toMerge.length === 0) {
-        toast.info("No hay pares con similitud ≥ 90% pendientes de fusión.");
+        toast.info("No hay pares con similitud ≥ 78% pendientes de fusión.");
         return;
       }
 

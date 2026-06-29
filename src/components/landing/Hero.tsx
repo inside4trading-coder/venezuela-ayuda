@@ -32,10 +32,29 @@ export function Hero() {
 
         <dl className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 border-t border-hair border-[var(--color-border)] pt-6">
           {[
-            { l: "Centros activos", v: metrics.centrosActivos, to: "/centros" },
-            { l: "Necesidades activas", v: metrics.necesidadesActivas.toLocaleString("es-VE"), to: "/necesidades" },
-            { l: "Sobrevivientes", v: metrics.sobrevivientes, to: "/rescatados" },
-            { l: "Estados cubiertos", v: metrics.estados },
+            {
+              l: "Centros activos",
+              v: (metrics.centrosActivos + (metrics.centrosActivosExternos ?? 0)).toLocaleString("es-VE"),
+              sub: `${metrics.centrosActivos} locales · ${metrics.centrosActivosExternos ?? 0} en ayudaavzla.com`,
+              to: "/centros",
+            },
+            {
+              l: "Necesidades activas",
+              v: metrics.necesidadesActivas.toLocaleString("es-VE"),
+              sub: "En centros locales",
+              to: "/necesidades",
+            },
+            {
+              l: "Sobrevivientes",
+              v: (metrics.sobrevivientes + (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE"),
+              sub: `${metrics.sobrevivientes.toLocaleString("es-VE")} locales · ${(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} en ayudaavzla.com`,
+              to: "/rescatados",
+            },
+            {
+              l: "Estados cubiertos",
+              v: metrics.estados,
+              sub: "A nivel nacional",
+            },
           ].map((m) => {
             const content = (
               <>
@@ -43,6 +62,11 @@ export function Hero() {
                   {m.l}
                 </dt>
                 <dd className="font-display text-[24px] font-semibold mt-1">{m.v}</dd>
+                {m.sub && (
+                  <span className="text-[11px] text-[var(--color-text-muted)] mt-0.5 block font-sans">
+                    {m.sub}
+                  </span>
+                )}
               </>
             );
             return m.to ? (

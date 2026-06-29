@@ -16,9 +16,11 @@ export interface ActivityEntry {
 
 export interface ImpactMetrics {
   centrosActivos: number;
+  centrosActivosExternos?: number;
   necesidadesActivas: number;
   voluntarios: number;
   sobrevivientes: number;
+  sobrevivientesExternos?: number;
   estados: number;
   porTipo: Record<
     CenterKind,
@@ -28,9 +30,11 @@ export interface ImpactMetrics {
 
 const EMPTY_METRICS: ImpactMetrics = {
   centrosActivos: 0,
+  centrosActivosExternos: 0,
   necesidadesActivas: 0,
   voluntarios: 0,
   sobrevivientes: 0,
+  sobrevivientesExternos: 0,
   estados: 0,
   porTipo: {
     albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
@@ -163,11 +167,28 @@ export function useImpact() {
 
         const estadosUnicos = new Set(centersArr.map((c) => c.state)).size;
 
+        let extCentros = 0;
+        let extSurvivors = 0;
+        try {
+          const res = await fetch("https://ayudaavzla.com/api/v1/metricas");
+          if (res.ok) {
+            const extData = await res.json();
+            if (extData.ok) {
+              extCentros = extData.lugares?.total || 0;
+              extSurvivors = extData.personas?.total || 0;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching external metrics:", e);
+        }
+
         setMetrics({
           centrosActivos: centersArr.length,
+          centrosActivosExternos: extCentros,
           necesidadesActivas: needsData?.length ?? 0,
           voluntarios: voluntariosCount ?? 0,
           sobrevivientes: survivorsCount ?? 0,
+          sobrevivientesExternos: extSurvivors,
           estados: estadosUnicos,
           porTipo,
         });

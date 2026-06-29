@@ -8,6 +8,7 @@ const LINKS = [
   { to: "/", label: "Inicio" },
   { to: "/centros", label: "Centros" },
   { to: "/rescatados", label: "Rescatados" },
+  { to: "/edificios", label: "Edificios" },
   { to: "/necesidades", label: "Necesidades" },
   { to: "/voluntarios", label: "Voluntarios" },
   { to: "/donaciones", label: "Donaciones" },

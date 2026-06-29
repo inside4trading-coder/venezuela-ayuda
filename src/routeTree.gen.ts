@@ -16,6 +16,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NecesidadesRouteImport } from './routes/necesidades'
 import { Route as MarcaRouteImport } from './routes/marca'
 import { Route as ImpactoRouteImport } from './routes/impacto'
+import { Route as EdificiosRouteImport } from './routes/edificios'
 import { Route as DonacionesRouteImport } from './routes/donaciones'
 import { Route as CentrosRouteImport } from './routes/centros'
 import { Route as IndexRouteImport } from './routes/index'
@@ -64,6 +65,11 @@ const MarcaRoute = MarcaRouteImport.update({
 const ImpactoRoute = ImpactoRouteImport.update({
   id: '/impacto',
   path: '/impacto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EdificiosRoute = EdificiosRouteImport.update({
+  id: '/edificios',
+  path: '/edificios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DonacionesRoute = DonacionesRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/donaciones': typeof DonacionesRoute
+  '/edificios': typeof EdificiosRoute
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/donaciones': typeof DonacionesRoute
+  '/edificios': typeof EdificiosRoute
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/centros': typeof CentrosRoute
   '/donaciones': typeof DonacionesRoute
+  '/edificios': typeof EdificiosRoute
   '/impacto': typeof ImpactoRoute
   '/marca': typeof MarcaRoute
   '/necesidades': typeof NecesidadesRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/donaciones'
+    | '/edificios'
     | '/impacto'
     | '/marca'
     | '/necesidades'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/donaciones'
+    | '/edificios'
     | '/impacto'
     | '/marca'
     | '/necesidades'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/'
     | '/centros'
     | '/donaciones'
+    | '/edificios'
     | '/impacto'
     | '/marca'
     | '/necesidades'
@@ -283,6 +295,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CentrosRoute: typeof CentrosRoute
   DonacionesRoute: typeof DonacionesRoute
+  EdificiosRoute: typeof EdificiosRoute
   ImpactoRoute: typeof ImpactoRoute
   MarcaRoute: typeof MarcaRoute
   NecesidadesRoute: typeof NecesidadesRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/impacto'
       fullPath: '/impacto'
       preLoaderRoute: typeof ImpactoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/edificios': {
+      id: '/edificios'
+      path: '/edificios'
+      fullPath: '/edificios'
+      preLoaderRoute: typeof EdificiosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/donaciones': {
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CentrosRoute: CentrosRoute,
   DonacionesRoute: DonacionesRoute,
+  EdificiosRoute: EdificiosRoute,
   ImpactoRoute: ImpactoRoute,
   MarcaRoute: MarcaRoute,
   NecesidadesRoute: NecesidadesRoute,

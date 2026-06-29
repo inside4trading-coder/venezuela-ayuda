@@ -21,6 +21,8 @@ export interface ImpactMetrics {
   voluntarios: number;
   sobrevivientes: number;
   sobrevivientesExternos?: number;
+  sobrevivientesASalvoExternos?: number;
+  sobrevivientesBuscandoExternos?: number;
   estados: number;
   porTipo: Record<
     CenterKind,
@@ -35,6 +37,8 @@ const EMPTY_METRICS: ImpactMetrics = {
   voluntarios: 0,
   sobrevivientes: 0,
   sobrevivientesExternos: 0,
+  sobrevivientesASalvoExternos: 0,
+  sobrevivientesBuscandoExternos: 0,
   estados: 0,
   porTipo: {
     albergue: { total: 0, metricaLabel: "familias alojadas", metricaValor: 0 },
@@ -169,6 +173,8 @@ export function useImpact() {
 
         let extCentros = 0;
         let extSurvivors = 0;
+        let extASalvo = 0;
+        let extBuscando = 0;
         try {
           const res = await fetch("https://ayudaavzla.com/api/v1/metricas");
           if (res.ok) {
@@ -176,6 +182,8 @@ export function useImpact() {
             if (extData.ok) {
               extCentros = extData.lugares?.total || 0;
               extSurvivors = extData.personas?.total || 0;
+              extASalvo = extData.personas?.por_estado?.a_salvo || 0;
+              extBuscando = extData.personas?.por_estado?.buscando || 0;
             }
           }
         } catch (e) {
@@ -189,6 +197,8 @@ export function useImpact() {
           voluntarios: voluntariosCount ?? 0,
           sobrevivientes: survivorsCount ?? 0,
           sobrevivientesExternos: extSurvivors,
+          sobrevivientesASalvoExternos: extASalvo,
+          sobrevivientesBuscandoExternos: extBuscando,
           estados: estadosUnicos,
           porTipo,
         });

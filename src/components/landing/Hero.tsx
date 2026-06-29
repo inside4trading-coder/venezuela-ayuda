@@ -39,21 +39,24 @@ export function Hero() {
               to: "/centros",
             },
             {
-              l: "Necesidades activas",
-              v: metrics.necesidadesActivas.toLocaleString("es-VE"),
-              sub: "En centros locales",
-              to: "/necesidades",
-            },
-            {
               l: "Sobrevivientes",
               v: (metrics.sobrevivientes + (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE"),
               sub: `${metrics.sobrevivientes.toLocaleString("es-VE")} locales · ${(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} en ayudaavzla.com`,
               to: "/rescatados",
             },
             {
-              l: "Estados cubiertos",
-              v: metrics.estados,
-              sub: "A nivel nacional",
+              l: "A salvo / reunidas",
+              v: (metrics.sobrevivientesASalvoExternos ?? 0).toLocaleString("es-VE"),
+              sub: "Red ayudaavzla.com",
+              color: "text-emerald-600 dark:text-emerald-400",
+              to: "/rescatados",
+            },
+            {
+              l: "En búsqueda",
+              v: (metrics.sobrevivientesBuscandoExternos ?? 0).toLocaleString("es-VE"),
+              sub: "Red ayudaavzla.com",
+              color: "text-amber-600 dark:text-amber-400",
+              to: "/rescatados",
             },
           ].map((m) => {
             const content = (
@@ -61,7 +64,7 @@ export function Hero() {
                 <dt className="font-mono text-[10px] uppercase tracking-label text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)] transition-colors">
                   {m.l}
                 </dt>
-                <dd className="font-display text-[24px] font-semibold mt-1">{m.v}</dd>
+                <dd className={`font-display text-[24px] font-semibold mt-1 ${m.color || ""}`}>{m.v}</dd>
                 {m.sub && (
                   <span className="text-[11px] text-[var(--color-text-muted)] mt-0.5 block font-sans">
                     {m.sub}

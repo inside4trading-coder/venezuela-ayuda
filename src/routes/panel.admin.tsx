@@ -96,6 +96,68 @@ function AdminPanel() {
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [discardedBuildingKeys, setDiscardedBuildingKeys] = useState<Set<string>>(new Set());
   const [mergingBuildingId, setMergingBuildingId] = useState<string | null>(null);
+  const [runningBuildingCleanup, setRunningBuildingCleanup] = useState(false);
+  const [showConfirmBuildingModal, setShowConfirmBuildingModal] = useState(false);
+
+  const triggerBuildingsAutoCleanup = async () => {
+    setRunningBuildingCleanup(true);
+    let mergedCount = 0;
+    try {
+      const toMerge = buildingDuplicates.filter(
+        (d) => d.similitud >= 0.95 && !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`)
+      );
+
+      for (const pair of toMerge) {
+        const pairKey = `${pair.id_a}-${pair.id_b}`;
+        if (discardedBuildingKeys.has(pairKey)) continue;
+
+        const keepBuilding = buildingsList.find((b) => b.id === pair.id_a);
+        const discardBuilding = buildingsList.find((b) => b.id === pair.id_b);
+
+        if (!keepBuilding || !discardBuilding) continue;
+
+        const patch: Record<string, any> = {};
+        if (
+          (!keepBuilding.estatus || keepBuilding.estatus === "sin_datos") &&
+          discardBuilding.estatus &&
+          discardBuilding.estatus !== "sin_datos"
+        ) {
+          patch.estatus = discardBuilding.estatus;
+        }
+        if (
+          (!keepBuilding.zona || keepBuilding.zona === "null" || keepBuilding.zona === "") &&
+          discardBuilding.zona &&
+          discardBuilding.zona !== "null" &&
+          discardBuilding.zona !== ""
+        ) {
+          patch.zona = discardBuilding.zona;
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await supabase.from("buildings").update(patch).eq("id", pair.id_a);
+        }
+
+        const { error } = await supabase.from("buildings").delete().eq("id", pair.id_b);
+
+        if (!error) {
+          mergedCount++;
+          setDiscardedBuildingKeys((prev) => {
+            const next = new Set(prev);
+            next.add(pairKey);
+            return next;
+          });
+        }
+      }
+
+      toast.success(`Se fusionaron ${mergedCount} edificios duplicados automáticamente.`);
+      loadBuildingDuplicates();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ocurrió un error al realizar la limpieza automática.");
+    } finally {
+      setRunningBuildingCleanup(false);
+    }
+  };
 
   const loadBuildingDuplicates = async () => {
     setLoadingBuildings(true);
@@ -918,7 +980,7 @@ function AdminPanel() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-4">
+              <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
                 <div>
                   <h2 className="font-display font-semibold text-[17px] text-[var(--color-text-main)]">
                     Fuzzy Matching de Edificios (Similitud ≥ 70%)
@@ -927,6 +989,14 @@ function AdminPanel() {
                     {buildingDuplicates.filter((d) => !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`)).length} pares potenciales encontrados
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmBuildingModal(true)}
+                  disabled={runningBuildingCleanup || loadingBuildings || buildingDuplicates.filter((d) => d.similitud >= 0.95 && !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`)).length === 0}
+                  className="px-4 h-9 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-semibold rounded-md transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  {runningBuildingCleanup ? "Limpiando..." : "Ejecutar limpieza automática"}
+                </button>
               </div>
 
               {loadingBuildings ? (
@@ -1079,6 +1149,41 @@ function AdminPanel() {
                 onClick={() => {
                   setShowConfirmModal(false);
                   triggerAutoCleanup();
+                }}
+                className="px-4 py-2 rounded-md bg-[var(--color-critical)] text-white text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-all shadow-sm"
+              >
+                Confirmar y limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Limpieza Automática de Edificios */}
+      {showConfirmBuildingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl max-w-[440px] w-full p-6 space-y-6 shadow-xl animate-scale-in">
+            <div className="space-y-2">
+              <h3 className="font-display font-semibold text-[18px] text-[var(--color-text-main)]">
+                Confirmar Limpieza Automática de Edificios
+              </h3>
+              <p className="text-[13px] text-[var(--color-text-muted)] leading-relaxed">
+                Se fusionarán automáticamente todos los edificios detectados con similitud <strong className="text-[var(--color-critical)] font-semibold">≥ 95%</strong>. Esta acción no se puede deshacer. ¿Continuar?
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmBuildingModal(false)}
+                className="px-4 py-2 rounded-md border border-[var(--color-border)] text-[13px] font-display font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmBuildingModal(false);
+                  triggerBuildingsAutoCleanup();
                 }}
                 className="px-4 py-2 rounded-md bg-[var(--color-critical)] text-white text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-all shadow-sm"
               >

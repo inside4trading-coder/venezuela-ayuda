@@ -114,10 +114,10 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              to="/centros"
+              to="/rescatados"
               className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-[var(--color-critical)] text-white text-[15px]"
             >
-              Ver centros activos
+              Ver rescatados
             </Link>
             <Link
               to="/registrar-centro"

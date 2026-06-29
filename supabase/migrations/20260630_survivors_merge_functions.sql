@@ -7,6 +7,14 @@
 -- ============================================================
 
 -- ----------------------------------------------------------------
+-- 0. Eliminar funciones existentes para poder recrearlas con la
+--    firma correcta (Postgres no permite cambiar OUT parameters)
+-- ----------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.find_duplicate_survivors();
+DROP FUNCTION IF EXISTS public.merge_survivors(uuid, uuid);
+DROP FUNCTION IF EXISTS public.merge_exact_duplicate_survivors();
+
+-- ----------------------------------------------------------------
 -- 1. Encontrar posibles duplicados por similitud de nombre
 -- ----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.find_duplicate_survivors()

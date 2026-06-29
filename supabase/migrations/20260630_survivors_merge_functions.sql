@@ -15,6 +15,15 @@ DROP FUNCTION IF EXISTS public.merge_survivors(uuid, uuid);
 DROP FUNCTION IF EXISTS public.merge_exact_duplicate_survivors();
 
 -- ----------------------------------------------------------------
+-- 0b. Activar extensión pg_trgm y crear índice GIN para que
+--     la función similarity() use el índice y no haga timeout
+-- ----------------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS survivors_full_name_trgm_idx
+  ON public.survivors USING gin (lower(full_name) gin_trgm_ops);
+
+-- ----------------------------------------------------------------
 -- 1. Encontrar posibles duplicados por similitud de nombre
 -- ----------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.find_duplicate_survivors()

@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Search } from "lucide-react";
+import { searchAddress } from "@/lib/nominatim";
 
 export interface Building {
-  id: number;
+  id: string; // UUID in supabase is string
   edificio: string;
   zona: string | null;
   torre: string | null;
@@ -202,33 +203,9 @@ function EdificiosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-            {filteredBuildings.map((b) => {
-              const { cleanName, parsedZone } = parseBuildingName(b.edificio);
-              const displayZone = b.zona || parsedZone || "Zona no registrada";
-              const status = getStatusBadge(b.estatus);
-
-              return (
-                <article
-                  key={b.id}
-                  className="bg-white dark:bg-[var(--color-surface)] border border-gray-150 dark:border-[var(--color-border)] rounded-xl p-5 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between h-full shadow-sm"
-                >
-                  <div className="space-y-1">
-                    <h3 className="font-display font-semibold text-[16px] text-[var(--color-text-main)] leading-snug">
-                      {cleanName}
-                    </h3>
-                    <p className="text-[13px] text-[var(--color-text-muted)] flex items-center gap-1.5">
-                      <span className="text-[14px]">📍</span> {displayZone}
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
-                    <span className="text-[11px] text-[var(--color-text-muted)]">Estado:</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${status.classes}`}>
-                      {status.label}
-                    </span>
-                  </div>
-                </article>
-              );
-            })}
+            {filteredBuildings.map((b) => (
+              <BuildingCard key={b.id} building={b} />
+            ))}
           </div>
         )}
       </div>
@@ -245,5 +222,106 @@ function BuildingSkeleton() {
       </div>
       <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 self-end"></div>
     </div>
+  );
+}
+
+function BuildingCard({ building }: { building: Building }) {
+  const { cleanName, parsedZone } = parseBuildingName(building.edificio);
+  const initialZone = building.zona || parsedZone;
+  const isUnregistered = !initialZone || initialZone === "null" || initialZone === "";
+  const [displayZone, setDisplayZone] = useState<string>(
+    isUnregistered ? "Zona no registrada" : initialZone!
+  );
+  const [coords, setCoords] = useState<{ lat: string; lon: string } | null>(null);
+  const [loadingGeocode, setLoadingGeocode] = useState(false);
+
+  const geocode = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoadingGeocode(true);
+    try {
+      let query = `${cleanName}, La Guaira, Venezuela`;
+      let results = await searchAddress(query);
+
+      if (results.length === 0) {
+        query = `${cleanName}, Venezuela`;
+        results = await searchAddress(query);
+      }
+
+      if (results.length > 0) {
+        const matched = results[0];
+        const addr = matched.address;
+        const resolved =
+          addr.suburb ||
+          addr.neighbourhood ||
+          addr.city ||
+          addr.town ||
+          addr.village ||
+          addr.state ||
+          "Venezuela";
+
+        if (resolved && resolved !== "null") {
+          setDisplayZone(resolved);
+        }
+        setCoords({ lat: matched.lat, lon: matched.lon });
+      } else {
+        setDisplayZone("Ubicación no encontrada");
+      }
+    } catch (err) {
+      console.error("Geocoding error for building:", cleanName, err);
+      setDisplayZone("Error al geolocalizar");
+    } finally {
+      setLoadingGeocode(false);
+    }
+  };
+
+  const status = getStatusBadge(building.estatus);
+  const mapUrl = coords
+    ? `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lon}`
+    : null;
+
+  return (
+    <article className="bg-white dark:bg-[var(--color-surface)] border border-gray-150 dark:border-[var(--color-border)] rounded-xl p-5 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between h-full shadow-sm animate-fade-in">
+      <div className="space-y-1">
+        <h3 className="font-display font-semibold text-[16px] text-[var(--color-text-main)] leading-snug">
+          {cleanName}
+        </h3>
+        <div className="text-[13px] text-[var(--color-text-muted)] flex items-center gap-1.5 flex-wrap min-h-[20px]">
+          <span className="text-[14px]">📍</span>
+          {isUnregistered && displayZone === "Zona no registrada" ? (
+            <button
+              onClick={geocode}
+              disabled={loadingGeocode}
+              className="inline-flex items-center gap-1 text-[12px] text-[#1f6fb2] hover:text-[#154d7d] dark:text-sky-400 dark:hover:text-sky-300 font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingGeocode ? (
+                <span className="animate-pulse">Buscando geolocalización...</span>
+              ) : (
+                <span>Geolocalizar</span>
+              )}
+            </button>
+          ) : (
+            <span className="capitalize">{displayZone}</span>
+          )}
+
+          {mapUrl && (
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-[12px] text-emerald-600 hover:text-emerald-700 dark:text-emerald-450 dark:hover:text-emerald-355 font-semibold hover:underline ml-1"
+            >
+              (Ver mapa)
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
+        <span className="text-[11px] text-[var(--color-text-muted)]">Estado:</span>
+        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${status.classes}`}>
+          {status.label}
+        </span>
+      </div>
+    </article>
   );
 }

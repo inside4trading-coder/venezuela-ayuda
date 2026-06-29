@@ -10,6 +10,7 @@ const LINKS = [
   { to: "/rescatados", label: "Rescatados" },
   { to: "/necesidades", label: "Necesidades" },
   { to: "/voluntarios", label: "Voluntarios" },
+  { to: "/donaciones", label: "Donaciones" },
   { to: "/impacto", label: "Impacto" },
 ];
 

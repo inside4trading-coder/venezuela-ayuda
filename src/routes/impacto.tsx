@@ -98,13 +98,8 @@ function ImpactPage() {
         </div>
       </section>
 
-      {/* Métricas secundarias */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <Metric n={metrics.centrosActivos} l="centros activos (local)" />
-        <Metric n={metrics.necesidadesActivas.toLocaleString("es-VE")} l="necesidades activas" />
-        <Metric n={metrics.sobrevivientes.toLocaleString("es-VE")} l="sobrevivientes registrados (local)" />
-        <Metric n={metrics.estados} l="estados cubiertos" />
-      </section>
+
+
 
       <section>
         <div className="flex flex-wrap gap-x-5 gap-y-2 border-y border-hair border-[var(--color-border)] py-3 font-mono text-[12px] text-[var(--color-text-muted)]">

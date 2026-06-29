@@ -26,8 +26,8 @@ select
   coalesce(c.verified_at, c.created_at)                                 as updated_at,
   (c.verified_at is not null)                                           as verified,
   array_remove(array[
-    n.nivel,
-    case when n.nivel in ('critico','alto') then 'urgente' end,
+    n.nivel::text,
+    case when n.nivel::text in ('critico','alto') then 'urgente' end,
     case when c.verified_at is null then 'centro_no_verificado' end
   ], null)                                                              as tags
 from public.needs n

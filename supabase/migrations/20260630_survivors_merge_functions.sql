@@ -147,9 +147,10 @@ $$;
 -- ----------------------------------------------------------------
 ALTER TABLE public.survivors ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS survivors_select_public    ON public.survivors;
-DROP POLICY IF EXISTS survivors_admin_dml        ON public.survivors;
-DROP POLICY IF EXISTS survivors_update_reunited  ON public.survivors;
+DROP POLICY IF EXISTS survivors_select_public        ON public.survivors;
+DROP POLICY IF EXISTS survivors_admin_dml            ON public.survivors;
+DROP POLICY IF EXISTS survivors_update_reunited      ON public.survivors;
+DROP POLICY IF EXISTS survivors_authenticated_dml   ON public.survivors;
 
 -- Lectura pública (cualquier usuario puede listar sobrevivientes)
 CREATE POLICY survivors_select_public ON public.survivors

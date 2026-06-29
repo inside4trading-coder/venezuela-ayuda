@@ -9,7 +9,10 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "endpoints:sample": "npx -y @hainrixz/enpoint-agentkit sample",
+    "endpoints:validate": "npx -y @hainrixz/enpoint-agentkit validate endpoints/propuesta.survivors.json --strict && npx -y @hainrixz/enpoint-agentkit validate endpoints/propuesta.centers.json && npx -y @hainrixz/enpoint-agentkit validate endpoints/propuesta.inventory.json && npx -y @hainrixz/enpoint-agentkit validate endpoints/propuesta.volunteer-roles.json",
+    "endpoints:audit": "npx -y @hainrixz/enpoint-agentkit audit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

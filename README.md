@@ -2,7 +2,9 @@
 
 **Plataforma de coordinación humanitaria en tiempo real — Terremoto Venezuela, 24 de junio de 2026**
 
-> Conectamos donadores, voluntarios, centros de acopio y familias afectadas en una sola plataforma operacional. Sin fricción. Sin burocracia. En vivo.
+> Conectamos donadores, voluntarios, centros de acopio, autoridades y familias afectadas en una sola plataforma operacional. Sin fricción. Sin burocracia. En vivo.
+
+🔗 **Producción:** https://vnzla-ayuda.vercel.app/
 
 ---
 
@@ -17,6 +19,7 @@ El problema no fue la falta de voluntad para ayudar. Fue la falta de coordinaci�
 - Voluntarios médicos sin saber dónde se necesitaban
 - Cocinas comunitarias sin gas mientras otros centros tenían excedente
 - Rutas de distribución paralizadas por falta de combustible y vehículos
+- Familias buscando a sus seres queridos sin un registro central
 
 **Venezuela Ayuda** es la capa de inteligencia que faltaba: un directorio en vivo que cruza oferta con demanda, en tiempo real, accesible desde cualquier teléfono.
 
@@ -34,52 +37,93 @@ El problema no fue la falta de voluntad para ayudar. Fue la falta de coordinaci�
 | 🍲 **Cocina comunitaria** | Prepara y distribuye alimentos | Raciones por día |
 | 🚛 **Centro de distribución** | Última milla a familias | Entregas / vehículos activos |
 
-### Para cada actor
+### Módulos principales
 
-**Donador** — ve qué necesita cada centro exactamente, en qué cantidad y con qué nivel de urgencia. Anuncia su llegada antes de ir.
+- **Directorio de centros** (`/centros`) — filtros por tipo, estado, necesidades, capacidad
+- **Necesidades agregadas** (`/necesidades`) — qué hace falta a nivel red, no centro a centro
+- **Sobrevivientes** (`/rescatados`) — registro central de personas afectadas, con marcado de "reunido con familia"
+- **Voluntarios** (`/voluntarios`) — marketplace de roles abiertos por centro
+- **Donaciones** (`/donaciones`) — alianza con la **Organización Solo Fe** para canalizar aportes
+- **Impacto** (`/impacto`) — métricas públicas en vivo
 
-**Voluntario** — registra su perfil y skills (médico, logística, transporte, cocina). La plataforma lo conecta con el centro que más lo necesita en su zona.
+### Panel por rol (10 perfiles)
 
-**Coordinador de centro** — registra y actualiza su centro en 2 minutos. El directorio se actualiza en tiempo real para todos los demás.
+Cada actor tiene su propio panel con permisos específicos vía RLS de Supabase:
 
-**Transportista** — ve las rutas activas, conecta centros de acopio con albergues y zonas de distribución.
-
-**Diáspora venezolana** — ve el impacto en vivo de la red: sobrevivientes registrados, necesidades activas y centros coordinados.
+| Panel | Para | Qué hace |
+|-------|------|----------|
+| `/panel/admin` | Administradores | Verificación de centros, gestión de roles, **fusión de sobrevivientes duplicados** |
+| `/panel/autoridad` | Protección Civil, alcaldías | Vista táctica, georreferenciación |
+| `/panel/centro` | Coordinadores de centro | Inventario en vivo, roles abiertos, estado |
+| `/panel/data-entry` | Operadores de captura | Carga masiva de sobrevivientes y centros |
+| `/panel/diaspora` | Venezolanos en el exterior | Métricas de impacto, dónde donar |
+| `/panel/donador` | Donadores individuales | Historial, confirmaciones de entrega |
+| `/panel/empresa` | Empresas patrocinadoras | Donaciones corporativas, branding |
+| `/panel/ong` | ONGs aliadas | Integración de datos propios |
+| `/panel/transportista` | Logística | Rutas activas, vehículos disponibles |
+| `/panel/voluntario` | Voluntarios | Roles abiertos, postulaciones, asignaciones |
 
 ---
 
-## Estado actual — Fase 1 (MVP)
+## 🌐 API pública (datos abiertos)
 
-✅ Directorio de centros con filtros por tipo, estado y necesidades  
-✅ Cards con métricas específicas por tipo de centro  
-✅ Formulario de registro de centros  
-✅ Formulario de voluntarios  
-✅ Panel de impacto con métricas en vivo  
-✅ Vista de necesidades agregadas por ítem  
-✅ Live ticker de situación operacional  
-✅ Responsive — funciona en cualquier teléfono  
+Para que medios, ONG, otras apps y la red federada del [`endpoint-agent-kit`](https://github.com/Hainrixz/enpoint-agentkit) puedan consumir los datos sin depender del frontend.
 
-⏳ Fase 2 (próxima): Supabase + Google Auth + datos reales en tiempo real  
-⏳ Fase 3: Backoffice por roles + notificaciones push  
-⏳ Fase 4: PWA instalable + modo offline  
+### Endpoints
+
+| Recurso | URL | Perfil del kit |
+|---|---|---|
+| Sobrevivientes (sin PII) | `/rest/v1/survivors_public` | `persona-desaparecida` |
+| Centros de acopio | `/rest/v1/centers_public` | `general` |
+| Inventario / necesidades | `/rest/v1/inventory_public` | `general` |
+| Roles de voluntariado | `/rest/v1/volunteer_roles_public` | `general` |
+
+**Host:** `https://kqtilzssuynblfkuqxyx.supabase.co`
+
+### Headers obligatorios
+
+```
+apikey:         sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8
+Authorization:  Bearer sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8
+Accept-Profile: public
+```
+
+### Ejemplo
+
+```bash
+curl -H "apikey: sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8" \
+     -H "Authorization: Bearer sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8" \
+     -H "Accept-Profile: public" \
+     "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/survivors_public?select=*&limit=10"
+```
+
+### Garantías de privacidad
+
+- **Sobrevivientes:** sin `cedula`. Menores de 18 con `person_name` y `age` enmascarados — sólo ciudad/estado.
+- **Reunidos:** las personas marcadas como reunidas con su familia desaparecen del endpoint automáticamente (modelo federado: la fuente conserva derecho de borrado).
+- **Sólo verificados:** todas las vistas filtran datos verificados por staff de la plataforma.
+- **Voluntarios:** no se exponen personas individuales — sólo qué roles abiertos hay por centro.
+
+Documentación completa, smoke tests y propuestas para registrar en redes federadas: ver [`endpoints/README.md`](endpoints/README.md).
 
 ---
 
 ## Stack técnico
 
 ```
-Frontend    React + TypeScript + TanStack Router
+Frontend    React 19 + TypeScript + TanStack Router
 Estilos     Tailwind CSS v4 + sistema de tokens propio
 UI Base     shadcn/ui (Radix UI) + componentes propios
-Build       Vite + Bun
+Build       Vite 7 + Bun
 Deploy      Vercel (auto-deploy desde GitHub)
-Backend*    Supabase (Fase 2)
-Auth*       Google OAuth via Supabase (Fase 2)
+Backend     Supabase (PostgreSQL + Auth + RLS + Storage + Realtime)
+Auth        Google OAuth via Supabase
+API pública Supabase PostgREST + vistas SQL filtradas (public.*_public)
 ```
 
 ### Sistema de diseño
 
-La identidad visual está construida sobre un sistema de tokens CSS propio — no el esquema por defecto de Tailwind. Cada color tiene un significado operacional:
+La identidad visual está construida sobre un sistema de tokens CSS propio. Cada color tiene un significado operacional:
 
 ```css
 --color-critical:    #C8102E   /* Urgente — rojo bandera venezolana */
@@ -91,6 +135,8 @@ La identidad visual está construida sobre un sistema de tokens CSS propio — n
 
 Tipografía: **DM Sans** (display), **Inter** (UI y datos), **DM Mono** (timestamps y cantidades).
 
+Manual de marca disponible en `/marca`.
+
 ---
 
 ## Arquitectura del código
@@ -98,39 +144,43 @@ Tipografía: **DM Sans** (display), **Inter** (UI y datos), **DM Mono** (timesta
 ```
 src/
 ├── data/
-│   └── mock.ts              # Tipos TypeScript + datos mock (reemplazable por Supabase)
-├── hooks/
-│   ├── useCenters.ts        # Filtrado y búsqueda de centros
-│   ├── useInventory.ts      # Inventario por centro
-│   └── useImpact.ts         # Métricas globales
+│   ├── donaciones.ts        # Datos de la alianza Solo Fe
+│   ├── volunteer-roles.ts   # Catálogo de roles
+│   └── mock.ts              # Fixtures de desarrollo
+├── hooks/                    # Toda la lógica de datos (Supabase + cache)
+│   ├── useCenters.ts        # Directorio con degradación graceful
+│   ├── useSurvivors.ts      # Sobrevivientes con paginación y filtros
+│   ├── useImpact.ts         # Métricas en vivo
+│   ├── useLiveStats.ts      # Ticker operacional
+│   ├── useMarkSurvivorReunited.ts
+│   └── usePanelData.ts
+├── lib/
+│   ├── supabase.ts          # Cliente Supabase
+│   ├── queries.ts           # Queries base
+│   ├── nominatim.ts         # Geocoding
+│   └── requiredFields.ts
 ├── components/
 │   ├── centers/             # CenterCard, FiltersPanel
 │   ├── layout/              # LiveTicker, Navbar
 │   └── ui-vh/               # Badge, StatusPill, CapacityBar, NeedTag, KindBadge
 └── routes/
-    ├── index.tsx            # Directorio principal
-    ├── centro.$id.tsx       # Detalle de centro
-    ├── registrar-centro.tsx # Formulario de registro
-    ├── necesidades.tsx      # Necesidades agregadas
-    ├── voluntarios.tsx      # Registro de voluntarios
-    └── impacto.tsx          # Panel público de impacto
-```
+    ├── index.tsx, centros.tsx, centro.$id.tsx
+    ├── donaciones.tsx, rescatados.tsx, necesidades.tsx
+    ├── voluntarios.tsx, impacto.tsx, onboarding.tsx
+    ├── registrar-centro.tsx, marca.tsx
+    └── panel.{admin,autoridad,centro,data-entry,diaspora,
+                donador,empresa,ong,transportista,voluntario}.tsx
 
-### Decisión de arquitectura clave
+supabase/
+└── migrations/              # 14+ migraciones versionadas
+    ├── 20260627_create_volunteers_donations_inventory.sql
+    ├── 20260627_phase3_roles.sql
+    ├── 20260628_survivors_add_cedula.sql
+    ├── 20260628_survivors_family_reunited.sql
+    └── 20260629_public_api_views.sql   ← API pública
 
-Los hooks (`useCenters`, `useInventory`, `useImpact`) tienen **firma estable**. Hoy devuelven datos mock. En Fase 2, su interior apuntará a Supabase — los componentes que los consumen no cambian una sola línea.
-
-```typescript
-// Hoy — mock
-export function useCenters(filters: CenterFilters) {
-  return { centers: CENTERS.filter(...), total, isLoading: false }
-}
-
-// Fase 2 — misma firma, fuente real
-export function useCenters(filters: CenterFilters) {
-  const { data, isLoading } = useQuery(supabase.from('centers')...)
-  return { centers: data, total, isLoading }
-}
+endpoints/                    # Propuestas para redes federadas
+└── README.md                # Documentación de la API pública
 ```
 
 ---
@@ -140,75 +190,97 @@ export function useCenters(filters: CenterFilters) {
 **Prerrequisitos:** Node.js 18+ o Bun 1.0+
 
 ```bash
-# Clonar
 git clone https://github.com/inside4trading-coder/venezuela-ayuda.git
 cd venezuela-ayuda
 
-# Instalar dependencias
 bun install
+bun run dev          # http://localhost:3000
 
-# Desarrollo
-bun run dev
-
-# Build producción
-bun run build
+bun run build        # producción
+bun run lint
+bun run format
 ```
 
-La app corre en `http://localhost:3000`
+### Variables de entorno (opcionales — hay fallbacks)
+
+```bash
+VITE_SUPABASE_URL=https://kqtilzssuynblfkuqxyx.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+```
+
+### Aplicar migraciones de Supabase
+
+```bash
+# Vía CLI de Supabase
+supabase db push
+
+# O manual: pegar contenido de supabase/migrations/*.sql en Dashboard → SQL Editor
+```
 
 ---
 
 ## Roadmap
 
-### Fase 2 — Backend real (próximas 72h)
-- [ ] Supabase: schema de base de datos + Row Level Security
-- [ ] Google OAuth — login con un click, sin crear cuenta nueva
-- [ ] Formularios que guardan datos reales
-- [ ] Realtime: inventario se actualiza en vivo entre coordinadores
-- [ ] Verificación de centros antes de publicar
+### ✅ Fase 1 — MVP (24 jun 2026)
+- Directorio de centros, filtros, cards por tipo
+- Formularios de registro
+- Métricas en vivo, live ticker
+- Responsive mobile-first
 
-### Fase 3 — Backoffice y roles
-- [ ] Panel de coordinador de centro — gestión de inventario
-- [ ] Panel de admin — verificación y moderación
-- [ ] Panel de donador — historial y confirmación de entregas
-- [ ] Notificaciones push cuando un centro cercano marca urgencia
+### ✅ Fase 2 — Backend real (27 jun 2026)
+- Supabase con schema completo + RLS por rol
+- Google OAuth (login en 1 click)
+- Datos reales — el SPA dejó de depender de mocks
+- Realtime para inventario y ticker
+- Verificación de centros por admin
 
-### Fase 4 — PWA y escala
-- [ ] Progressive Web App — instalable desde el navegador
-- [ ] Modo offline — funciona sin conexión en zonas afectadas
+### ✅ Fase 3 — Backoffice y roles (27-28 jun 2026)
+- 10 paneles por rol con permisos vía RLS
+- Panel admin: verificación, moderación, fusión de duplicados de sobrevivientes
+- Carga masiva (data-entry) con detección de cédulas duplicadas
+- Marcado de "reunido con familia" para sobrevivientes
+
+### ✅ Fase 4 — Alianzas y datos abiertos (28-29 jun 2026)
+- Módulo `/donaciones` con la **Organización Solo Fe**
+- API pública (4 endpoints REST sobre vistas SQL filtradas)
+- Integración con el `endpoint-agent-kit` para registro en redes federadas
+
+### ⏳ Fase 5 — PWA y escala
+- [ ] Progressive Web App instalable
+- [ ] Modo offline para zonas con conectividad intermitente
 - [ ] Mapa interactivo con geolocalización
-- [ ] API pública para integración con otras plataformas de ayuda
+- [ ] Notificaciones push cuando un centro cercano marca urgencia
 - [ ] App nativa (React Native + Expo) para iOS y Android
+- [ ] Más alianzas con ONG y autoridades locales
 
 ---
 
 ## Cómo contribuir
 
-Este proyecto nació en menos de 24 horas. Hay mucho por hacer y toda ayuda suma.
+Este proyecto nació en menos de 24 horas y sigue creciendo cada día. Hay mucho por hacer y toda ayuda suma.
 
-**Si eres desarrollador** — abre un issue o un PR. Las áreas más urgentes están marcadas en el roadmap.
-
-**Si coordinás un centro** — registralo en la plataforma. Cada centro real que se suma hace la red más útil para todos.
-
-**Si tenés contactos en Venezuela** — comparte la URL. La plataforma solo funciona si llega a quienes la necesitan.
-
-**Si representás una ONG o organización** — escríbenos para integración directa de datos y acceso de administrador.
+- **Desarrolladores** — abrí un issue o un PR. Las áreas más urgentes están marcadas en el roadmap.
+- **Coordinadores de centro** — registrá tu centro en la plataforma. Cada centro real suma a la red.
+- **ONGs y organizaciones** — escribinos para integración directa de datos y acceso de admin.
+- **Periodistas / investigadores** — usá la [API pública](#-api-pública-datos-abiertos) para tus reportes. Pedimos sólo que cites la fuente.
+- **Diáspora** — compartí la URL. La plataforma sólo funciona si llega a quienes la necesitan.
 
 ---
 
-## Equipo
+## Aliados
 
-Construido con urgencia y propósito por venezolanos y amigos de Venezuela que creen que la tecnología puede hacer la diferencia en una emergencia.
+- 🟢 **Organización Solo Fe** — canalización de donaciones (`/donaciones`)
+- 🔗 **Red `endpoint-agent-kit`** — federación de datos cívicos (`endpoints/`)
 
 ---
 
 ## Licencia
 
-MIT — usa este código libremente para ayudar. Si lo adaptas para otra emergencia humanitaria, nos encantaría saberlo.
+MIT — usá este código libremente para ayudar. Si lo adaptás para otra emergencia humanitaria, nos encantaría saberlo.
 
 ---
 
 <div align="center">
-  <strong>Venezuela Ayuda</strong> · Construido el 27 de junio de 2026 · 
+  <strong>Venezuela Ayuda</strong> · Construido el 27 de junio de 2026 ·
   <a href="https://vnzla-ayuda.vercel.app/">https://vnzla-ayuda.vercel.app/</a>
 </div>

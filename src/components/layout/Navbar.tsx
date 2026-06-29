@@ -116,14 +116,17 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden p-2 text-[var(--color-text-main)]"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Menú"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+        {/* Mobile actions: Auth button compacto + hamburger */}
+        <div className="md:hidden flex items-center gap-2 shrink-0">
+          <AuthButton compact />
+          <button
+            className="p-2 text-[var(--color-text-main)]"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menú"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}

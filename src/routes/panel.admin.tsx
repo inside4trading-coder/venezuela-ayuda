@@ -1196,7 +1196,7 @@ function AdminPanel() {
                 Confirmar Limpieza Automática
               </h3>
               <p className="text-[13px] text-[var(--color-text-muted)] leading-relaxed">
-                Se fusionarán automáticamente los pares con similitud <strong className="text-[var(--color-critical)] font-semibold">≥ 95%</strong>. Esta acción no se puede deshacer. ¿Continuar?
+                Se fusionarán automáticamente los pares con similitud <strong className="text-[var(--color-critical)] font-semibold">≥ 78%</strong>. Esta acción no se puede deshacer. ¿Continuar?
               </p>
             </div>
             <div className="flex justify-end gap-3">

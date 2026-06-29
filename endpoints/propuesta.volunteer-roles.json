@@ -21,9 +21,11 @@
     "organization": "organization",
     "city": "city",
     "state": "state",
+    "verified": "verified",
     "updated_at": "updated_at",
-    "source_record_id": "source_record_id"
+    "source_record_id": "source_record_id",
+    "tags": "tags"
   },
   "contact_email": "hola@musacreativo.com",
-  "notes": "Vista SQL filtrada: roles abiertos por centro verificado. Cada fila representa un rol disponible (logística, médico, transporte, cocina, etc.). NO expone voluntarios individuales por privacidad. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+  "notes": "Roles abiertos por centro. Cada fila representa un rol disponible (logística, médico, transporte, cocina, etc.). NO expone voluntarios individuales por privacidad. Incluye roles de centros no verificados (verified=false, tag 'centro_no_verificado'). Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
 }

@@ -22,10 +22,11 @@
     "city": "city",
     "state": "state",
     "status": "status",
+    "verified": "verified",
     "updated_at": "updated_at",
     "source_record_id": "source_record_id",
-    "tags": "tags_category"
+    "tags": "tags"
   },
   "contact_email": "hola@musacreativo.com",
-  "notes": "Vista SQL filtrada por centros verificados. Cada fila representa un ítem de inventario (alimentos, medicamentos, ropa, higiene, etc.) en un centro de acopio. Quantity/unit indican stock actual. Status: 'ok' | 'bajo' | 'critico'. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+  "notes": "Cada fila representa un ítem de inventario (alimentos, medicamentos, ropa, higiene, etc.) en un centro de acopio. Quantity/unit indican stock actual. Status: 'ok' | 'bajo' | 'critico'. Incluye items de centros no verificados (marcados con verified=false y tag 'centro_no_verificado'). Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
 }

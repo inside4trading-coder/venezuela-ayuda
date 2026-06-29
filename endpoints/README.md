@@ -42,8 +42,17 @@ Paginación PostgREST: `?limit=50&offset=0`. Max recomendado: `limit=200`.
 
 - **Sobrevivientes:** sin `cedula`. Para menores de 18 (`age_approx < 18`) se enmascaran nombre y edad — sólo ciudad/estado.
 - **Reunidos:** las personas marcadas como `reunited_at` desaparecen del endpoint automáticamente (modelo federado del kit: la fuente conserva derecho de borrado).
-- **Sólo verificados:** todas las vistas filtran `verified = true` o `verified_at is not null`.
 - **Voluntarios:** no se exponen personas individuales — sólo qué roles abiertos hay por centro.
+
+## Estado de verificación
+
+Las vistas exponen **todos** los registros, verificados o no. El consumidor distingue mediante:
+
+- Campo booleano `verified` (presente en las 4 vistas).
+- Tag `'no_verificado'` en el array `tags` de `survivors_public` y `centers_public`.
+- Tag `'centro_no_verificado'` en `inventory_public` y `volunteer_roles_public` cuando el centro asociado no está verificado.
+
+Esto permite que apps consumidoras decidan: mostrar todo y marcar los no verificados, o filtrar por `verified=eq.true` en su URL.
 
 ## Smoke test
 

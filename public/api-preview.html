@@ -108,9 +108,9 @@
 
 <footer>
   <p>
-    Esta página consume datos en vivo desde <code>kqtilzssuynblfkuqxyx.supabase.co</code>.
-    Sobrevivientes: sin cédula, menores anonimizados, reunidos automáticamente excluidos.
-    Centros / inventario / voluntarios: sólo registros verificados.
+    Datos en vivo. Sobrevivientes: sin cédula, menores anonimizados, reunidos automáticamente excluidos.
+    Todas las vistas exponen registros verificados y no verificados;
+    los no verificados se distinguen con <code>verified: false</code> y un tag.
   </p>
   <p>
     🔗 <a href="https://vnzla-ayuda.vercel.app/">Volver al sitio</a> ·
@@ -132,25 +132,25 @@ const ENDPOINTS = [
     id: "survivors_public",
     title: "Sobrevivientes",
     kind: "persona-desaparecida",
-    desc: "Sin cédula. Menores (<18) anonimizados. Reunidos excluidos."
+    desc: "Todos los registros. Sin cédula. Menores (<18) anonimizados. Reunidos excluidos. Los no verificados llevan tag 'no_verificado' y verified=false."
   },
   {
     id: "centers_public",
     title: "Centros de acopio",
     kind: "general",
-    desc: "Sólo centros verificados. Coordenadas redondeadas (~1 km)."
+    desc: "Todos los centros. Coordenadas redondeadas (~1 km). Los no verificados llevan tag 'no_verificado' y verified=false."
   },
   {
     id: "inventory_public",
     title: "Inventario / Necesidades",
     kind: "general",
-    desc: "Items de stock por centro verificado."
+    desc: "Todos los items. Los de centros no verificados llevan tag 'centro_no_verificado' y verified=false."
   },
   {
     id: "volunteer_roles_public",
     title: "Roles de voluntariado abiertos",
     kind: "general",
-    desc: "Roles por centro. No expone voluntarios individuales."
+    desc: "Todos los roles abiertos. No expone voluntarios individuales. Los de centros no verificados llevan tag 'centro_no_verificado'."
   }
 ];
 

@@ -101,8 +101,16 @@ curl -H "apikey: sb_publishable_udPVuneAoBbPorp0N0nd-w_pLgp36S8" \
 
 - **Sobrevivientes:** sin `cedula`. Menores de 18 con `person_name` y `age` enmascarados — sólo ciudad/estado.
 - **Reunidos:** las personas marcadas como reunidas con su familia desaparecen del endpoint automáticamente (modelo federado: la fuente conserva derecho de borrado).
-- **Sólo verificados:** todas las vistas filtran datos verificados por staff de la plataforma.
 - **Voluntarios:** no se exponen personas individuales — sólo qué roles abiertos hay por centro.
+
+### Estado de verificación
+
+Las 4 vistas exponen **todos** los registros (verificados y no verificados). El consumidor distingue mediante:
+
+- Campo booleano `verified` en cada fila.
+- Tag `'no_verificado'` (sobrevivientes y centros) o `'centro_no_verificado'` (inventario y roles) en el array `tags`.
+
+Filtrar por verificados desde el cliente: agregá `?verified=eq.true` a la URL.
 
 Documentación completa, smoke tests y propuestas para registrar en redes federadas: ver [`endpoints/README.md`](endpoints/README.md).
 

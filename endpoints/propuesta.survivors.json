@@ -1,0 +1,36 @@
+{
+  "source_name": "Venezuela Ayuda — Sobrevivientes",
+  "kind": "persona_desaparecida",
+  "endpoint_url": "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/survivors_public",
+  "http_method": "GET",
+  "auth_type": "api_key",
+  "auth_header": "apikey",
+  "extra_headers": {
+    "Authorization": "Bearer <APIKEY>",
+    "Accept-Profile": "public"
+  },
+  "pagination": {
+    "style": "offset",
+    "limit_param": "limit",
+    "offset_param": "offset",
+    "page_size": 100
+  },
+  "data_path": "",
+  "field_mapping": {
+    "title": "person_name",
+    "person_name": "person_name",
+    "age": "age",
+    "location_name": "location_name",
+    "city": "city",
+    "state": "state",
+    "country": "country",
+    "status": "status",
+    "verified": "verified",
+    "observed_at": "observed_at",
+    "updated_at": "updated_at",
+    "source_record_id": "source_record_id",
+    "tags": "tags"
+  },
+  "contact_email": "hola@musacreativo.com",
+  "notes": "Vista SQL filtrada: sin cédula. Menores (<18) con person_name y age enmascarados a NULL. Sobrevivientes reunidos con su familia (reunited_at NOT NULL) se excluyen automáticamente. Sólo registros verificados. Requiere 3 headers: apikey, Authorization Bearer y Accept-Profile=public (este proyecto Supabase usa graphql_public como schema por defecto)."
+}

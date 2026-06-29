@@ -1,0 +1,31 @@
+{
+  "source_name": "Venezuela Ayuda — Inventario y Necesidades",
+  "kind": "general",
+  "endpoint_url": "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/inventory_public",
+  "http_method": "GET",
+  "auth_type": "api_key",
+  "auth_header": "apikey",
+  "extra_headers": {
+    "Authorization": "Bearer <APIKEY>",
+    "Accept-Profile": "public"
+  },
+  "pagination": {
+    "style": "offset",
+    "limit_param": "limit",
+    "offset_param": "offset",
+    "page_size": 100
+  },
+  "data_path": "",
+  "field_mapping": {
+    "title": "title",
+    "organization": "organization",
+    "city": "city",
+    "state": "state",
+    "status": "status",
+    "updated_at": "updated_at",
+    "source_record_id": "source_record_id",
+    "tags": "tags_category"
+  },
+  "contact_email": "hola@musacreativo.com",
+  "notes": "Vista SQL filtrada por centros verificados. Cada fila representa un ítem de inventario (alimentos, medicamentos, ropa, higiene, etc.) en un centro de acopio. Quantity/unit indican stock actual. Status: 'ok' | 'bajo' | 'critico'. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+}

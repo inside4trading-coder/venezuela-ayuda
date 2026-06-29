@@ -1,0 +1,29 @@
+{
+  "source_name": "Venezuela Ayuda — Roles de Voluntariado Abiertos",
+  "kind": "general",
+  "endpoint_url": "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/volunteer_roles_public",
+  "http_method": "GET",
+  "auth_type": "api_key",
+  "auth_header": "apikey",
+  "extra_headers": {
+    "Authorization": "Bearer <APIKEY>",
+    "Accept-Profile": "public"
+  },
+  "pagination": {
+    "style": "offset",
+    "limit_param": "limit",
+    "offset_param": "offset",
+    "page_size": 100
+  },
+  "data_path": "",
+  "field_mapping": {
+    "title": "title",
+    "organization": "organization",
+    "city": "city",
+    "state": "state",
+    "updated_at": "updated_at",
+    "source_record_id": "source_record_id"
+  },
+  "contact_email": "hola@musacreativo.com",
+  "notes": "Vista SQL filtrada: roles abiertos por centro verificado. Cada fila representa un rol disponible (logística, médico, transporte, cocina, etc.). NO expone voluntarios individuales por privacidad. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+}

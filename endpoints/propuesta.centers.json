@@ -1,0 +1,36 @@
+{
+  "source_name": "Venezuela Ayuda — Centros de Acopio",
+  "kind": "general",
+  "endpoint_url": "https://kqtilzssuynblfkuqxyx.supabase.co/rest/v1/centers_public",
+  "http_method": "GET",
+  "auth_type": "api_key",
+  "auth_header": "apikey",
+  "extra_headers": {
+    "Authorization": "Bearer <APIKEY>",
+    "Accept-Profile": "public"
+  },
+  "pagination": {
+    "style": "offset",
+    "limit_param": "limit",
+    "offset_param": "offset",
+    "page_size": 100
+  },
+  "data_path": "",
+  "field_mapping": {
+    "title": "title",
+    "status": "status",
+    "location_name": "location_name",
+    "city": "city",
+    "state": "state",
+    "country": "country",
+    "latitude": "latitude",
+    "longitude": "longitude",
+    "contact": "contact",
+    "observed_at": "verified_at",
+    "updated_at": "verified_at",
+    "source_record_id": "source_record_id",
+    "tags": "tags"
+  },
+  "contact_email": "hola@musacreativo.com",
+  "notes": "Vista SQL filtrada: sólo centros con verified_at NOT NULL. Coordenadas redondeadas a 2 decimales (~1 km). Contact es teléfono institucional del centro, no PII personal. Requiere headers apikey + Authorization Bearer + Accept-Profile=public."
+}

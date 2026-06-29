@@ -89,6 +89,140 @@ function AdminPanel() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [exitingKeys, setExitingKeys] = useState<Set<string>>(new Set());
 
+  // Estados para Calidad de Datos de Edificios
+  const [calidadSubTab, setCalidadSubTab] = useState<"sobrevivientes" | "edificios">("sobrevivientes");
+  const [buildingsList, setBuildingsList] = useState<any[]>([]);
+  const [buildingDuplicates, setBuildingDuplicates] = useState<any[]>([]);
+  const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [discardedBuildingKeys, setDiscardedBuildingKeys] = useState<Set<string>>(new Set());
+  const [mergingBuildingId, setMergingBuildingId] = useState<string | null>(null);
+
+  const loadBuildingDuplicates = async () => {
+    setLoadingBuildings(true);
+    try {
+      const { data, error } = await supabase
+        .from("buildings")
+        .select("*")
+        .order("edificio", { ascending: true });
+        
+      if (error) {
+        toast.error("Error al cargar edificios: " + error.message);
+        return;
+      }
+      
+      const list = data || [];
+      setBuildingsList(list);
+
+      const found: any[] = [];
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const b1 = list[i];
+          const b2 = list[j];
+          const similarity = getFuzzySimilarity(b1.edificio, b2.edificio);
+          if (similarity >= 0.70) {
+            found.push({
+              id_a: b1.id,
+              nombre_a: b1.edificio,
+              zona_a: b1.zona,
+              estatus_a: b1.estatus,
+              created_a: b1.created_at,
+              building_a: b1,
+              
+              id_b: b2.id,
+              nombre_b: b2.edificio,
+              zona_b: b2.zona,
+              estatus_b: b2.estatus,
+              created_b: b2.created_at,
+              building_b: b2,
+              
+              similitud: similarity,
+            });
+          }
+        }
+      }
+      
+      found.sort((x, y) => y.similitud - x.similitud);
+      setBuildingDuplicates(found);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al buscar edificios duplicados");
+    } finally {
+      setLoadingBuildings(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin && activeTab === "calidad" && calidadSubTab === "edificios") {
+      loadBuildingDuplicates();
+    }
+  }, [isAdmin, activeTab, calidadSubTab]);
+
+  const mergeBuildings = async (keepId: string, discardId: string, pairKey: string) => {
+    setMergingBuildingId(keepId);
+    try {
+      const keepBuilding = buildingsList.find((b) => b.id === keepId);
+      const discardBuilding = buildingsList.find((b) => b.id === discardId);
+      
+      if (!keepBuilding || !discardBuilding) {
+        toast.error("Error: Edificio no encontrado");
+        return;
+      }
+
+      const patch: Record<string, any> = {};
+      if (
+        (!keepBuilding.estatus || keepBuilding.estatus === "sin_datos") &&
+        discardBuilding.estatus &&
+        discardBuilding.estatus !== "sin_datos"
+      ) {
+        patch.estatus = discardBuilding.estatus;
+      }
+      if (
+        (!keepBuilding.zona || keepBuilding.zona === "null" || keepBuilding.zona === "") &&
+        discardBuilding.zona &&
+        discardBuilding.zona !== "null" &&
+        discardBuilding.zona !== ""
+      ) {
+        patch.zona = discardBuilding.zona;
+      }
+
+      if (Object.keys(patch).length > 0) {
+        const { error: updateErr } = await supabase
+          .from("buildings")
+          .update(patch)
+          .eq("id", keepId);
+        if (updateErr) {
+          toast.error("Error al actualizar edificio principal: " + updateErr.message);
+          return;
+        }
+      }
+
+      const { error: deleteErr } = await supabase
+        .from("buildings")
+        .delete()
+        .eq("id", discardId);
+
+      if (deleteErr) {
+        toast.error("Error al eliminar edificio duplicado: " + deleteErr.message);
+        return;
+      }
+
+      toast.success("Edificios fusionados con éxito");
+      
+      setDiscardedBuildingKeys((prev) => {
+        const next = new Set(prev);
+        next.add(pairKey);
+        return next;
+      });
+      
+      setBuildingDuplicates((prev) => prev.filter((d) => `${d.id_a}-${d.id_b}` !== pairKey));
+    } catch (err) {
+      console.error(err);
+      toast.error("Ocurrió un error inesperado al fusionar edificios");
+    } finally {
+      setMergingBuildingId(null);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     const { data: assignedRows } = await supabase
@@ -584,173 +718,337 @@ function AdminPanel() {
         </>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
-            <div>
-              <h2 className="font-display font-semibold text-[18px]">
-                Calidad de Datos — Sobrevivientes Duplicados
-              </h2>
-              <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
-                {visibleDuplicates.length} {visibleDuplicates.length === 1 ? "par pendiente" : "pares pendientes"} de revisión
-              </p>
-            </div>
+          {/* Sub-tabs para Calidad de Datos */}
+          <div className="flex gap-2 bg-gray-50 dark:bg-gray-900/60 p-1.5 rounded-lg w-fit border border-[var(--color-border)]">
             <button
               type="button"
-              onClick={() => setShowConfirmModal(true)}
-              disabled={runningCleanup || loadingDuplicates}
-              className="px-4 h-9 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-semibold rounded-md transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+              onClick={() => setCalidadSubTab("sobrevivientes")}
+              className={`px-4 py-2 rounded-md text-[13px] font-display font-semibold transition-all cursor-pointer ${
+                calidadSubTab === "sobrevivientes"
+                  ? "bg-white dark:bg-gray-800 text-[var(--color-text-main)] shadow-sm border border-gray-150 dark:border-gray-700"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border border-transparent"
+              }`}
             >
-              {runningCleanup ? "Limpiando..." : "Ejecutar limpieza automática"}
+              Sobrevivientes (Base de datos)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalidadSubTab("edificios")}
+              className={`px-4 py-2 rounded-md text-[13px] font-display font-semibold transition-all cursor-pointer ${
+                calidadSubTab === "edificios"
+                  ? "bg-white dark:bg-gray-800 text-[var(--color-text-main)] shadow-sm border border-gray-150 dark:border-gray-700"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border border-transparent"
+              }`}
+            >
+              Edificios (Fuzzy Matching)
             </button>
           </div>
 
-          {loadError ? (
-            <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 p-8 text-center space-y-4 max-w-[600px] mx-auto mt-6 shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 text-red-650 dark:text-red-300 text-xl font-bold">
-                !
+          {calidadSubTab === "sobrevivientes" ? (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[var(--color-border)] pb-4">
+                <div>
+                  <h2 className="font-display font-semibold text-[17px] text-[var(--color-text-main)]">
+                    Duplicados de Sobrevivientes
+                  </h2>
+                  <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
+                    {visibleDuplicates.length} {visibleDuplicates.length === 1 ? "par pendiente" : "pares pendientes"} de revisión
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(true)}
+                  disabled={runningCleanup || loadingDuplicates}
+                  className="px-4 h-9 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-semibold rounded-md transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  {runningCleanup ? "Limpiando..." : "Ejecutar limpieza automática"}
+                </button>
               </div>
-              <h3 className="font-display font-semibold text-[16px] text-red-800 dark:text-red-300">
-                Error al cargar duplicados
-              </h3>
-              <p className="text-[13px] text-red-700 dark:text-red-400">
-                {loadError}
-              </p>
-              <button
-                type="button"
-                onClick={() => loadDuplicates()}
-                className="px-4 py-2 bg-[var(--color-critical)] text-white rounded-md text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-colors shadow-sm"
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : loadingDuplicates && duplicates.length === 0 ? (
-            <div className="space-y-4">
-              <DuplicateCardSkeleton />
-              <DuplicateCardSkeleton />
-              <DuplicateCardSkeleton />
-            </div>
-          ) : visibleDuplicates.length === 0 ? (
-            <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-8 text-center space-y-3 max-w-[600px] mx-auto mt-6 shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 text-2xl font-bold">
-                ✓
-              </div>
-              <h3 className="font-display font-semibold text-[16px] text-emerald-800 dark:text-emerald-300">
-                Base de datos limpia
-              </h3>
-              <p className="text-[13px] text-emerald-700 dark:text-emerald-400">
-                No se detectaron registros similares de sobrevivientes.
-              </p>
+
+              {loadError ? (
+                <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 p-8 text-center space-y-4 max-w-[600px] mx-auto mt-6 shadow-sm">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 text-red-650 dark:text-red-300 text-xl font-bold">
+                    !
+                  </div>
+                  <h3 className="font-display font-semibold text-[16px] text-red-800 dark:text-red-300">
+                    Error al cargar duplicados
+                  </h3>
+                  <p className="text-[13px] text-red-700 dark:text-red-400">
+                    {loadError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => loadDuplicates()}
+                    className="px-4 py-2 bg-[var(--color-critical)] text-white rounded-md text-[13px] font-display font-semibold hover:opacity-90 cursor-pointer transition-colors shadow-sm"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              ) : loadingDuplicates && duplicates.length === 0 ? (
+                <div className="space-y-4">
+                  <DuplicateCardSkeleton />
+                  <DuplicateCardSkeleton />
+                  <DuplicateCardSkeleton />
+                </div>
+              ) : visibleDuplicates.length === 0 ? (
+                <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-8 text-center space-y-3 max-w-[600px] mx-auto mt-6 shadow-sm">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 text-2xl font-bold">
+                    ✓
+                  </div>
+                  <h3 className="font-display font-semibold text-[16px] text-emerald-800 dark:text-emerald-300">
+                    Base de datos limpia
+                  </h3>
+                  <p className="text-[13px] text-emerald-700 dark:text-emerald-400">
+                    No se detectaron registros similares de sobrevivientes.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {visibleDuplicates.map((d) => {
+                    const pairKey = `${d.id_a}-${d.id_b}`;
+                    const isExiting = exitingKeys.has(pairKey);
+                    const pct = Math.round(d.similitud * 100);
+
+                    const getSimilarityColor = (sim: number) => {
+                      if (sim >= 0.95) {
+                        return "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900";
+                      }
+                      if (sim >= 0.85) {
+                        return "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900";
+                      }
+                      return "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900";
+                    };
+
+                    const colorClasses = getSimilarityColor(d.similitud);
+
+                    return (
+                      <article
+                        key={pairKey}
+                        className={`rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4 transition-all duration-300 transform ${
+                          isExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                        }`}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[var(--color-border)] pb-2 text-[12px]">
+                          <span className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
+                            POSIBLE DUPLICADO
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${colorClasses}`}>
+                            Similitud: {pct}%
+                          </span>
+                        </div>
+
+                        {/* Columns */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px]">
+                          {/* Registro A */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                A
+                              </span>
+                              <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                                {d.nombre_a}
+                              </h4>
+                            </div>
+                            <p className="text-[13px] text-[var(--color-text-muted)]">
+                              {d.estado_a || "Estado desconocido"} · {d.ubicacion_a || "Ubicación no registrada"}
+                            </p>
+                            <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
+                              {d.cedula_a ? `Cédula: ${d.cedula_a}` : "Sin cédula"}
+                            </p>
+                          </div>
+
+                          {/* Registro B */}
+                          <div className="space-y-1.5 md:text-right md:border-l md:border-[var(--color-border)] md:pl-6">
+                            <div className="flex items-center gap-2 md:justify-end">
+                              <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                                {d.nombre_b}
+                              </h4>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                B
+                              </span>
+                            </div>
+                            <p className="text-[13px] text-[var(--color-text-muted)]">
+                              {d.estado_b || "Estado desconocido"} · {d.ubicacion_b || "Ubicación no registrada"}
+                            </p>
+                            <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
+                              {d.cedula_b ? `Cédula: ${d.cedula_b}` : "Sin cédula"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--color-border)]">
+                          <button
+                            type="button"
+                            onClick={() => mergeDuplicates(d.id_a, d.id_b, pairKey)}
+                            disabled={mergingId !== null}
+                            className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                          >
+                            Conservar A
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => mergeDuplicates(d.id_b, d.id_a, pairKey)}
+                            disabled={mergingId !== null}
+                            className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                          >
+                            Conservar B
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDiscardedKeys((prev) => {
+                                const next = new Set(prev);
+                                next.add(pairKey);
+                                return next;
+                              });
+                            }}
+                            disabled={mergingId !== null}
+                            className="h-9 px-4 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-medium transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                          >
+                            No es duplicado
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {visibleDuplicates.map((d) => {
-                const pairKey = `${d.id_a}-${d.id_b}`;
-                const isExiting = exitingKeys.has(pairKey);
-                const pct = Math.round(d.similitud * 100);
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-4">
+                <div>
+                  <h2 className="font-display font-semibold text-[17px] text-[var(--color-text-main)]">
+                    Fuzzy Matching de Edificios (Similitud ≥ 70%)
+                  </h2>
+                  <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
+                    {buildingDuplicates.filter((d) => !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`)).length} pares potenciales encontrados
+                  </p>
+                </div>
+              </div>
 
-                const getSimilarityColor = (sim: number) => {
-                  if (sim >= 0.95) {
-                    return "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900";
-                  }
-                  if (sim >= 0.85) {
-                    return "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900";
-                  }
-                  return "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900";
-                };
+              {loadingBuildings ? (
+                <div className="space-y-4">
+                  <DuplicateCardSkeleton />
+                  <DuplicateCardSkeleton />
+                </div>
+              ) : buildingDuplicates.filter((d) => !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`)).length === 0 ? (
+                <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-8 text-center space-y-3 max-w-[600px] mx-auto mt-6 shadow-sm">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 text-2xl font-bold">
+                    ✓
+                  </div>
+                  <h3 className="font-display font-semibold text-[16px] text-emerald-800 dark:text-emerald-300">
+                    No se encontraron duplicados
+                  </h3>
+                  <p className="text-[13px] text-emerald-700 dark:text-emerald-400">
+                    Todas las edificaciones tienen nombres suficientemente diferentes.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {buildingDuplicates
+                    .filter((d) => !discardedBuildingKeys.has(`${d.id_a}-${d.id_b}`))
+                    .map((d) => {
+                      const pairKey = `${d.id_a}-${d.id_b}`;
+                      const pct = Math.round(d.similitud * 100);
 
-                const colorClasses = getSimilarityColor(d.similitud);
+                      const getSimilarityColor = (sim: number) => {
+                        if (sim >= 0.95) return "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900";
+                        if (sim >= 0.85) return "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900";
+                        return "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900";
+                      };
 
-                return (
-                  <article
-                    key={pairKey}
-                    className={`rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4 transition-all duration-300 transform ${
-                      isExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"
-                    }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[var(--color-border)] pb-2 text-[12px]">
-                      <span className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
-                        POSIBLE DUPLICADO
-                      </span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${colorClasses}`}>
-                        Similitud: {pct}%
-                      </span>
-                    </div>
+                      return (
+                        <article
+                          key={pairKey}
+                          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-4"
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[var(--color-border)] pb-2 text-[12px]">
+                            <span className="font-mono text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">
+                              POSIBLE EDIFICIO DUPLICADO
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getSimilarityColor(d.similitud)}`}>
+                              Similitud: {pct}%
+                            </span>
+                          </div>
 
-                    {/* Columns */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px]">
-                      {/* Registro A */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                            A
-                          </span>
-                          <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                            {d.nombre_a}
-                          </h4>
-                        </div>
-                        <p className="text-[13px] text-[var(--color-text-muted)]">
-                          {d.estado_a || "Estado desconocido"} · {d.ubicacion_a || "Ubicación no registrada"}
-                        </p>
-                        <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
-                          {d.cedula_a ? `Cédula: ${d.cedula_a}` : "Sin cédula"}
-                        </p>
-                      </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px]">
+                            {/* Registro A */}
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                  A
+                                </span>
+                                <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                                  {d.nombre_a}
+                                </h4>
+                              </div>
+                              <p className="text-[13px] text-[var(--color-text-muted)]">
+                                Zona: {d.zona_a && d.zona_a !== "null" ? d.zona_a : "Zona no registrada"}
+                              </p>
+                              <p className="text-[12px] text-[var(--color-text-muted)]">
+                                Estado: <span className="font-semibold">{getStatusBadge(d.estatus_a).label}</span>
+                              </p>
+                            </div>
 
-                      {/* Registro B */}
-                      <div className="space-y-1.5 md:text-right md:border-l md:border-[var(--color-border)] md:pl-6">
-                        <div className="flex items-center gap-2 md:justify-end">
-                          <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
-                            {d.nombre_b}
-                          </h4>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                            B
-                          </span>
-                        </div>
-                        <p className="text-[13px] text-[var(--color-text-muted)]">
-                          {d.estado_b || "Estado desconocido"} · {d.ubicacion_b || "Ubicación no registrada"}
-                        </p>
-                        <p className="text-[12px] font-mono text-[var(--color-text-muted)]">
-                          {d.cedula_b ? `Cédula: ${d.cedula_b}` : "Sin cédula"}
-                        </p>
-                      </div>
-                    </div>
+                            {/* Registro B */}
+                            <div className="space-y-1.5 md:text-right md:border-l md:border-[var(--color-border)] md:pl-6">
+                              <div className="flex items-center gap-2 md:justify-end">
+                                <h4 className="font-display font-semibold text-[15px] text-[var(--color-text-main)]">
+                                  {d.nombre_b}
+                                </h4>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                  B
+                                </span>
+                              </div>
+                              <p className="text-[13px] text-[var(--color-text-muted)]">
+                                Zona: {d.zona_b && d.zona_b !== "null" ? d.zona_b : "Zona no registrada"}
+                              </p>
+                              <p className="text-[12px] text-[var(--color-text-muted)]">
+                                Estado: <span className="font-semibold">{getStatusBadge(d.estatus_b).label}</span>
+                              </p>
+                            </div>
+                          </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--color-border)]">
-                      <button
-                        type="button"
-                        onClick={() => mergeDuplicates(d.id_a, d.id_b, pairKey)}
-                        disabled={mergingId !== null}
-                        className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
-                      >
-                        Conservar A
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => mergeDuplicates(d.id_b, d.id_a, pairKey)}
-                        disabled={mergingId !== null}
-                        className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
-                      >
-                        Conservar B
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDiscardedKeys((prev) => {
-                            const next = new Set(prev);
-                            next.add(pairKey);
-                            return next;
-                          });
-                        }}
-                        disabled={mergingId !== null}
-                        className="h-9 px-4 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-medium transition-all disabled:opacity-50 cursor-pointer shadow-sm"
-                      >
-                        No es duplicado
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+                          <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--color-border)]">
+                            <button
+                              type="button"
+                              onClick={() => mergeBuildings(d.id_a, d.id_b, pairKey)}
+                              disabled={mergingBuildingId !== null}
+                              className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                            >
+                              Conservar A (Borrar B)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => mergeBuildings(d.id_b, d.id_a, pairKey)}
+                              disabled={mergingBuildingId !== null}
+                              className="h-9 px-4 rounded-md bg-[var(--color-resolved)] hover:bg-[var(--color-resolved)]/90 text-white text-[13px] font-display font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                            >
+                              Conservar B (Borrar A)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDiscardedBuildingKeys((prev) => {
+                                  const next = new Set(prev);
+                                  next.add(pairKey);
+                                  return next;
+                                });
+                              }}
+                              disabled={mergingBuildingId !== null}
+                              className="h-9 px-4 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-alt)] text-[13px] font-display font-medium transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                            >
+                              No es duplicado
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -824,4 +1122,95 @@ function DuplicateCardSkeleton() {
 
 function Gate({ children }: { children: React.ReactNode }) {
   return <div className="max-w-[520px] mx-auto px-4 py-16 text-center">{children}</div>;
+}
+
+// Algoritmo Fuzzy Matching Levenshtein para Edificios
+function cleanBuildingNameForMatch(name: string): string {
+  const parsed = parseBuildingName(name).cleanName;
+  return parsed
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remover acentos
+    .replace(/\b(edificio|residencias|residencia|res|hotel|urb|bloque|bloques)\b/g, "") // ignorar prefijos comunes
+    .replace(/[^a-z0-9]/g, "") // dejar solo alfanumérico
+    .trim();
+}
+
+function parseBuildingName(name: string): { cleanName: string; parsedZone: string | null } {
+  const match = name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (match) {
+    return {
+      cleanName: match[1].trim(),
+      parsedZone: match[2].trim(),
+    };
+  }
+  return {
+    cleanName: name.trim(),
+    parsedZone: null,
+  };
+}
+
+function getStatusBadge(status: string | null) {
+  const normalized = (status || "").toLowerCase().trim();
+  switch (normalized) {
+    case "perdida_total":
+      return {
+        label: "Pérdida total",
+        classes: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-900"
+      };
+    case "danos_graves":
+      return {
+        label: "Daños graves",
+        classes: "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400 border-orange-200 dark:border-orange-900"
+      };
+    case "danos_leves":
+      return {
+        label: "Daños leves",
+        classes: "bg-yellow-50 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900"
+      };
+    case "habitable":
+      return {
+        label: "Habitable",
+        classes: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
+      };
+    case "sin_datos":
+    default:
+      return {
+        label: "Sin información",
+        classes: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700"
+      };
+  }
+}
+
+function getLevenshteinDistance(a: string, b: string): number {
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0)
+  );
+
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // eliminación
+        matrix[i][j - 1] + 1, // inserción
+        matrix[i - 1][j - 1] + cost // sustitución
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function getFuzzySimilarity(str1: string, str2: string): number {
+  const s1 = cleanBuildingNameForMatch(str1);
+  const s2 = cleanBuildingNameForMatch(str2);
+  
+  if (s1 === s2) return 1.0;
+  if (!s1 || !s2) return 0.0;
+  
+  const dist = getLevenshteinDistance(s1, s2);
+  const maxLen = Math.max(s1.length, s2.length);
+  return 1 - dist / maxLen;
 }

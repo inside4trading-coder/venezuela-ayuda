@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { createFileRoute } from '@tanstack/react-router'
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { Select } from "@/components/ui-vh/Field";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
 import { useSurvivors, type Survivor } from "@/hooks/useSurvivors";
@@ -42,20 +43,52 @@ function RescatadosPage() {
   const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
   const [survivorSearch, setSurvivorSearch] = useState<string>("");
   const [survivorState, setSurvivorState] = useState<string>("");
+  const [survivorPhysicalState, setSurvivorPhysicalState] = useState<string>("");
+  const [survivorLocation, setSurvivorLocation] = useState<string>("");
+  const [uniqueLocations, setUniqueLocations] = useState<string[]>([]);
   const [survivorPage, setSurvivorPage] = useState<number>(1);
   const [hideReunited, setHideReunited] = useState<boolean>(false);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("survivors")
+      .select("location_name")
+      .eq("verified", true)
+      .not("location_name", "is", null)
+      .then(({ data }) => {
+        if (!active) return;
+        if (data) {
+          const names = Array.from(new Set(data.map((d) => d.location_name))) as string[];
+          setUniqueLocations(names.filter(Boolean).sort());
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const localFilters = useMemo(
     () => ({
       search: survivorSearch || undefined,
       state: survivorState || undefined,
+      estado_fisico: survivorPhysicalState || undefined,
+      location_name: survivorLocation || undefined,
       page: survivorPage,
       pageSize: 10,
       hideReunited,
       refreshKey,
     }),
-    [survivorSearch, survivorState, survivorPage, hideReunited, refreshKey],
+    [
+      survivorSearch,
+      survivorState,
+      survivorPhysicalState,
+      survivorLocation,
+      survivorPage,
+      hideReunited,
+      refreshKey,
+    ],
   );
 
   const { items: survivors, totalCount: totalSurvivors, loading: loadingSurvivors } =
@@ -88,7 +121,7 @@ function RescatadosPage() {
 
 
 
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_240px] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-[var(--color-text-muted)]" />
@@ -112,10 +145,40 @@ function RescatadosPage() {
               setSurvivorPage(1);
             }}
           >
-            <option value="">Todos los Estados</option>
+            <option value="">Todos los Estados (Región)</option>
             {ESTADOS_VENEZUELA.map((s) => (
               <option key={s} value={s}>
                 {s}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            value={survivorPhysicalState}
+            onChange={(e) => {
+              setSurvivorPhysicalState(e.target.value);
+              setSurvivorPage(1);
+            }}
+          >
+            <option value="">Todos los Estados Físicos</option>
+            <option value="estable">Estable</option>
+            <option value="herido_leve">Herido Leve</option>
+            <option value="herido_grave">Herido Grave</option>
+            <option value="critico">Crítico</option>
+            <option value="fallecido">Fallecido</option>
+          </Select>
+
+          <Select
+            value={survivorLocation}
+            onChange={(e) => {
+              setSurvivorLocation(e.target.value);
+              setSurvivorPage(1);
+            }}
+          >
+            <option value="">Todos los Centros / Ubicaciones</option>
+            {uniqueLocations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
               </option>
             ))}
           </Select>

@@ -25,6 +25,7 @@ export interface Survivor {
 export interface SurvivorsFilters {
   state?: string;
   estado_fisico?: string;
+  location_name?: string;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -41,6 +42,7 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
   const pageSize = filters.pageSize ?? 10;
   const state = filters.state;
   const estadoFisico = filters.estado_fisico;
+  const locationName = filters.location_name;
   const searchName = filters.search;
   const hideReunited = filters.hideReunited ?? false;
   const refreshKey = filters.refreshKey ?? 0;
@@ -60,6 +62,9 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
         }
         if (estadoFisico) {
           q = q.eq("estado_fisico", estadoFisico);
+        }
+        if (locationName) {
+          q = q.eq("location_name", locationName);
         }
         if (searchName && searchName.trim()) {
           q = q.ilike("full_name", `%${searchName.trim()}%`);
@@ -94,7 +99,7 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
     return () => {
       active = false;
     };
-  }, [state, estadoFisico, searchName, page, pageSize, hideReunited, refreshKey]);
+  }, [state, estadoFisico, locationName, searchName, page, pageSize, hideReunited, refreshKey]);
 
   return { items, totalCount, loading };
 }

@@ -105,7 +105,11 @@
 .vh-marquee-track {
   display: inline-flex;
   white-space: nowrap;
-  animation: vh-marquee 40s linear infinite;
+  animation: vh-marquee 180s linear infinite;
+}
+
+.vh-marquee-track:hover {
+  animation-play-state: paused;
 }
 
 .vh-pulse-dot {

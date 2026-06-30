@@ -9,6 +9,7 @@
 
 -- Dropear restricción de género para cumplir con la política de tolerancia a valores libres
 ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_gender_check;
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_location_type_check;
 
 -- ----------------------------------------------------------------
 -- 1. Sincronizar Sobrevivientes

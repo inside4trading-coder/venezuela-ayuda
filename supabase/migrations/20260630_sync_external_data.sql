@@ -7,9 +7,28 @@
 -- limitaciones del RLS cliente de forma segura.
 -- ============================================================
 
--- Dropear restricción de género para cumplir con la política de tolerancia a valores libres
+-- ----------------------------------------------------------------
+-- Limpieza y Eliminación de Restricciones Redundantes (Evitar Bloqueos)
+-- ----------------------------------------------------------------
+-- 1. Dropear restricciones CHECK en survivors
 ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_gender_check;
 ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_location_type_check;
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_estado_fisico_check;
+
+-- 2. Dropear restricciones CHECK en centers
+ALTER TABLE public.centers DROP CONSTRAINT IF EXISTS centers_type_check;
+ALTER TABLE public.centers DROP CONSTRAINT IF EXISTS centers_status_check;
+
+-- 3. Dropear restricciones únicas e índices únicos en la columna 'cedula'
+-- Esto permite importar personas con cédulas idénticas o duplicadas (reportes dobles)
+-- para que puedan ser resueltas por el administrador con el fuzzy matching.
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_cedula_key;
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_cedula_unique;
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_cedula_unique_idx;
+DROP INDEX IF EXISTS public.survivors_cedula_unique_idx;
+DROP INDEX IF EXISTS public.survivors_cedula_key;
+DROP INDEX IF EXISTS public.idx_survivors_cedula_unique;
+DROP INDEX IF EXISTS public.survivors_cedula_unique_idx_unique;
 
 -- ----------------------------------------------------------------
 -- 1. Sincronizar Sobrevivientes

@@ -66,6 +66,21 @@ interface CandidateProfile {
   center_id: string | null;
 }
 
+interface CoordinationRequest {
+  id: string;
+  user_id: string;
+  center_id: string;
+  phone: string;
+  status: string;
+  created_at: string;
+  profiles: {
+    full_name: string | null;
+  } | null;
+  centers: {
+    name: string | null;
+  } | null;
+}
+
 function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: profLoading } = useProfile();
@@ -74,6 +89,7 @@ function AdminPanel() {
   const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
   const [orphanCenters, setOrphanCenters] = useState<OrphanCenter[]>([]);
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
+  const [coordinationRequests, setCoordinationRequests] = useState<CoordinationRequest[]>([]);
   const [assignSelection, setAssignSelection] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -330,7 +346,7 @@ function AdminPanel() {
         .filter(Boolean) as string[],
     );
 
-    const [c1, c2, p, allCenters, candsResult] = await Promise.all([
+    const [c1, c2, p, allCenters, candsResult, reqResult] = await Promise.all([
       supabase
         .from("centers")
         .select("id, name, type, city, state, address, phone, created_at, created_by, verified_at")
@@ -354,12 +370,18 @@ function AdminPanel() {
         .not("verified_at", "is", null),
       // RPC con SECURITY DEFINER para leer todos los perfiles sin limitación de RLS
       supabase.rpc('get_all_profiles_for_admin'),
+      supabase
+        .from("coordination_requests")
+        .select("id, user_id, center_id, phone, status, created_at, profiles(full_name), centers(name)")
+        .eq("status", "pendiente")
+        .order("created_at", { ascending: false }),
     ]);
 
     if (c1.error) console.error(c1.error);
     if (c2.error) console.error(c2.error);
     if (p.error) console.error(p.error);
     if (candsResult.error) console.error('RPC candidates error:', candsResult.error);
+    if (reqResult.error) console.error(reqResult.error);
 
     setPendingCenters((c1.data as PendingCenter[]) ?? []);
     setVerifiedCenters((c2.data as PendingCenter[]) ?? []);
@@ -369,6 +391,7 @@ function AdminPanel() {
     );
     setOrphanCenters(orphans);
     setCandidates((candsResult.data as CandidateProfile[]) ?? []);
+    setCoordinationRequests((reqResult.data as any[]) ?? []);
     setLoading(false);
   };
 
@@ -671,6 +694,39 @@ function AdminPanel() {
     load();
   };
 
+  const approveCoordinationRequest = async (id: string) => {
+    setBusyId(id);
+    const { error } = await supabase
+      .from("coordination_requests")
+      .update({ status: "aprobado", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    setBusyId(null);
+    if (error) {
+      toast.error("No se pudo aprobar la solicitud");
+      console.error(error);
+      return;
+    }
+    toast.success("Solicitud aprobada con éxito");
+    load();
+  };
+
+  const rejectCoordinationRequest = async (id: string) => {
+    if (!confirm("¿Rechazar esta solicitud de coordinación?")) return;
+    setBusyId(id);
+    const { error } = await supabase
+      .from("coordination_requests")
+      .update({ status: "rechazado", updated_at: new Date().toISOString() })
+      .eq("id", id);
+    setBusyId(null);
+    if (error) {
+      toast.error("No se pudo rechazar la solicitud");
+      console.error(error);
+      return;
+    }
+    toast.success("Solicitud rechazada");
+    load();
+  };
+
   const visibleDuplicates = duplicates.filter((d) => !discardedKeys.has(`${d.id_a}-${d.id_b}`));
 
   return (
@@ -778,6 +834,65 @@ function AdminPanel() {
                           type="button"
                           onClick={() => denyProfile(p.id)}
                           disabled={busyId === p.id}
+                          className="h-9 px-4 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-[13px] disabled:opacity-50"
+                          style={{ borderWidth: "0.5px" }}
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="font-display font-semibold text-[18px]">
+              Solicitudes de coordinación ({coordinationRequests.length})
+            </h2>
+            {loading ? (
+              <p className="text-[13px] text-[var(--color-text-muted)]">Cargando…</p>
+            ) : coordinationRequests.length === 0 ? (
+              <div className="rounded-lg border-hair border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-muted)]">
+                Sin solicitudes de coordinación pendientes.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {coordinationRequests.map((req) => (
+                  <article
+                    key={req.id}
+                    className="rounded-lg border-hair border-[var(--color-caution)] bg-[var(--color-surface)] p-5"
+                    style={{ borderLeftWidth: "3px" }}
+                  >
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="font-display font-semibold text-[16px]">
+                          {req.profiles?.full_name ?? "(Coordinador sin nombre)"}
+                        </div>
+                        <div className="mt-1 text-[13px] text-[var(--color-text-main)] font-medium">
+                          Solicita coordinar: <span className="font-semibold text-emerald-700 dark:text-emerald-400">{req.centers?.name ?? "(Centro sin nombre)"}</span>
+                        </div>
+                        <div className="mt-2 text-[13px] text-[var(--color-text-muted)] font-mono">
+                          📞 Teléfono de verificación: <span className="text-[var(--color-text-main)] font-semibold">{req.phone}</span>
+                        </div>
+                        <div className="mt-2 text-[11px] uppercase tracking-label text-[var(--color-text-muted)]">
+                          Solicitado el {new Date(req.created_at).toLocaleString("es-VE")}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => approveCoordinationRequest(req.id)}
+                          disabled={busyId === req.id}
+                          className="h-9 px-4 rounded-md bg-[var(--color-resolved)] text-white text-[13px] font-display font-semibold disabled:opacity-50"
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => rejectCoordinationRequest(req.id)}
+                          disabled={busyId === req.id}
                           className="h-9 px-4 rounded-md border-hair border-[var(--color-critical)] text-[var(--color-critical)] text-[13px] disabled:opacity-50"
                           style={{ borderWidth: "0.5px" }}
                         >

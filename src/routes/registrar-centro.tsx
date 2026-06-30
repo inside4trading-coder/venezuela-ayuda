@@ -108,7 +108,60 @@ function RegisterCenter() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading || profLoading) {
+  // Estados para solicitar coordinar centro existente
+  const [centers, setCenters] = useState<{ id: string; name: string | null; state: string | null; city: string | null }[]>([]);
+  const [loadingCenters, setLoadingCenters] = useState(true);
+  const [pendingRequest, setPendingRequest] = useState<any | null>(null);
+  const [loadingRequest, setLoadingRequest] = useState(true);
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [selectedCenterId, setSelectedCenterId] = useState("");
+  const [coordinatorPhone, setCoordinatorPhone] = useState("");
+  const [activeTab, setActiveTab] = useState<"register" | "request">("register");
+
+  useEffect(() => {
+    if (profile?.phone) {
+      setCoordinatorPhone(profile.phone);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadData() {
+      try {
+        // 1. Cargar centros verificados
+        const { data: centersData } = await supabase
+          .from("centers")
+          .select("id, name, state, city")
+          .not("verified_at", "is", null)
+          .order("name");
+        setCenters(centersData || []);
+      } catch (err) {
+        console.error("Error loading centers:", err);
+      } finally {
+        setLoadingCenters(false);
+      }
+
+      try {
+        // 2. Cargar solicitud de coordinación pendiente
+        const { data: reqData } = await supabase
+          .from("coordination_requests")
+          .select("*, centers(name)")
+          .eq("user_id", user.id)
+          .eq("status", "pendiente")
+          .maybeSingle();
+        setPendingRequest(reqData);
+      } catch (err) {
+        console.error("Error loading request:", err);
+      } finally {
+        setLoadingRequest(false);
+      }
+    }
+
+    loadData();
+  }, [user]);
+
+  if (authLoading || profLoading || (user && loadingRequest)) {
     return <Gate>Cargando…</Gate>;
   }
 
@@ -160,6 +213,56 @@ function RegisterCenter() {
         </Gate>
       );
     }
+  }
+
+  if (pendingRequest) {
+    return (
+      <Gate>
+        <h1 className="font-display text-[22px] mb-2">Solicitud en revisión</h1>
+        <p className="text-[13px] text-[var(--color-text-muted)] mb-5 max-w-md mx-auto">
+          Tienes una solicitud pendiente para coordinar el centro{" "}
+          <strong>{pendingRequest.centers?.name || "Cargando..."}</strong>.
+        </p>
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6 max-w-[500px] mx-auto text-left space-y-3">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] block">Centro solicitado</span>
+            <span className="font-semibold text-[14px] text-[var(--color-text-main)]">{pendingRequest.centers?.name}</span>
+          </div>
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] block">Teléfono de verificación</span>
+            <span className="font-mono text-[14px] text-[var(--color-text-main)]">{pendingRequest.phone}</span>
+          </div>
+          <div className="pt-2 border-t border-[var(--color-border)] text-[12px] text-[var(--color-text-muted)] italic">
+            Un administrador de la plataforma se comunicará contigo al teléfono indicado para verificar tu identidad y habilitar el acceso.
+          </div>
+        </div>
+        <div className="mt-6 flex justify-center gap-3">
+          <Link to="/" className="text-[13px] text-[var(--color-operational)] underline">
+            Volver al directorio
+          </Link>
+          <span>·</span>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm("¿Seguro que deseas cancelar esta solicitud?")) return;
+              const { error } = await supabase
+                .from("coordination_requests")
+                .delete()
+                .eq("id", pendingRequest.id);
+              if (error) {
+                toast.error("No se pudo cancelar la solicitud");
+              } else {
+                toast.success("Solicitud cancelada");
+                setPendingRequest(null);
+              }
+            }}
+            className="text-[13px] text-[var(--color-critical)] underline cursor-pointer"
+          >
+            Cancelar solicitud
+          </button>
+        </div>
+      </Gate>
+    );
   }
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -343,6 +446,7 @@ function RegisterCenter() {
   };
 
   const kindMeta = form.kind ? KIND_BY_ID[form.kind] : null;
+  const showTabs = !isAdmin && !isDataEntry;
 
   return (
     <div className="max-w-[640px] mx-auto px-4 py-8 lg:py-12">
@@ -356,7 +460,129 @@ function RegisterCenter() {
         </p>
       </header>
 
-      <form onSubmit={onSubmit} className="space-y-10" noValidate>
+      {showTabs && (
+        <div className="flex border-b border-[var(--color-border)] mb-8">
+          <button
+            type="button"
+            onClick={() => setActiveTab("register")}
+            className={`px-4 py-2.5 text-[14px] font-display font-semibold border-b-2 transition-all -mb-px cursor-pointer ${
+              activeTab === "register"
+                ? "border-[var(--color-critical)] text-[var(--color-text-main)]"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+            }`}
+          >
+            Registrar nuevo centro
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("request")}
+            className={`px-4 py-2.5 text-[14px] font-display font-semibold border-b-2 transition-all -mb-px cursor-pointer ${
+              activeTab === "request"
+                ? "border-[var(--color-critical)] text-[var(--color-text-main)]"
+                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+            }`}
+          >
+            Coordinar centro existente
+          </button>
+        </div>
+      )}
+
+      {activeTab === "request" && showTabs ? (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!selectedCenterId) {
+              toast.error("Selecciona un centro de la lista.");
+              return;
+            }
+            if (!coordinatorPhone.trim()) {
+              toast.error("El número de teléfono de contacto es obligatorio.");
+              return;
+            }
+            setSubmittingRequest(true);
+            try {
+              const { error } = await supabase
+                .from("coordination_requests")
+                .insert({
+                  user_id: user.id,
+                  center_id: selectedCenterId,
+                  phone: coordinatorPhone.trim(),
+                  status: "pendiente",
+                });
+              if (error) {
+                if (error.code === "23505") {
+                  throw new Error("Ya enviaste una solicitud para este centro.");
+                }
+                throw error;
+              }
+              toast.success("Solicitud enviada con éxito.");
+              const { data: reqData } = await supabase
+                .from("coordination_requests")
+                .select("*, centers(name)")
+                .eq("user_id", user.id)
+                .eq("status", "pendiente")
+                .maybeSingle();
+              setPendingRequest(reqData);
+              await refreshProfile();
+            } catch (err: any) {
+              console.error(err);
+              toast.error(err.message || "Error al enviar la solicitud.");
+            } finally {
+              setSubmittingRequest(false);
+            }
+          }}
+          className="space-y-6 bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-xl shadow-sm"
+          style={{ borderWidth: "0.5px" }}
+        >
+          <div className="space-y-2">
+            <h2 className="font-display font-semibold text-[18px]">Solicitar coordinación</h2>
+            <p className="text-[13px] text-[var(--color-text-muted)]">
+              Si tu centro ya está registrado en la plataforma, puedes solicitar los permisos para gestionarlo y actualizar sus necesidades y stock.
+            </p>
+          </div>
+
+          <Field label="Selecciona el centro" required>
+            {loadingCenters ? (
+              <p className="text-[13px] text-[var(--color-text-muted)]">Cargando centros...</p>
+            ) : (
+              <Select
+                value={selectedCenterId}
+                onChange={(e) => setSelectedCenterId(e.target.value)}
+              >
+                <option value="">Selecciona un centro…</option>
+                {centers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.city}, {c.state})
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          <Field
+            label="Tu número de teléfono celular"
+            required
+            help="Es obligatorio para que el equipo administrador te llame a verificar tu identidad y aprobar tu acceso."
+          >
+            <TextInput
+              value={coordinatorPhone}
+              onChange={(e) => setCoordinatorPhone(e.target.value)}
+              placeholder="+58 4..."
+            />
+          </Field>
+
+          <div className="pt-4 flex justify-end">
+            <button
+              type="submit"
+              disabled={submittingRequest}
+              className="h-11 px-6 rounded-md bg-[var(--color-critical)] text-white font-display font-semibold text-[15px] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submittingRequest ? "Enviando…" : "Enviar solicitud de coordinación"}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-10" noValidate>
         <Section title="Sobre el centro">
           <Field label="Nombre del centro" required error={errors.nombre}>
             <TextInput value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
@@ -651,6 +877,7 @@ function RegisterCenter() {
           </p>
         </div>
       </form>
+      )}
     </div>
   );
 }

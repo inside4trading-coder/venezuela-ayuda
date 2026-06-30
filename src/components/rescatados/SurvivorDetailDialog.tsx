@@ -295,7 +295,7 @@ export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
 
         {!isReunited && (
           <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-            {survivor.registered_by === "ayudaavzla.com" ? (
+            {survivor.registered_by === "ayudaavzla.com" || survivor.location_type === "Externo" ? (
               <div className="rounded-md border border-sky-100 dark:border-sky-950 bg-sky-50/50 dark:bg-sky-950/10 px-4 py-3 text-[13px] text-sky-850 dark:text-sky-350">
                 <p className="font-semibold text-[14px]">Registro Externo (Lectura)</p>
                 <p className="mt-1 text-sky-700 dark:text-sky-400">

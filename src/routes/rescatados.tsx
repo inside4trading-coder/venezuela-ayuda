@@ -246,7 +246,7 @@ function RescatadosPage() {
                               ✓ Reunido
                             </span>
                           )}
-                          {s.registered_by === "ayudaavzla.com" && (
+                          {(s.registered_by === "ayudaavzla.com" || s.location_type === "Externo") && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 text-sky-850 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-900 font-mono">
                               ayudaavzla.com
                             </span>

@@ -53,7 +53,7 @@ BEGIN
       coalesce(item->>'descripcion', CASE WHEN item->>'reportado_por' IS NOT NULL THEN 'Reportado por: ' || (item->>'reportado_por') END),
       item->>'foto_url',
       true,
-      'ayudaavzla.com',
+      null, -- registered_by es de tipo UUID; para registros externos se inserta NULL
       v_created_at,
       v_reunited_at
     )

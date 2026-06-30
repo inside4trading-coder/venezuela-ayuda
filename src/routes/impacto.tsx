@@ -53,9 +53,6 @@ function ImpactPage() {
           <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
             {metrics.centrosActivos.toLocaleString("es-VE")}
           </div>
-          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
-            {metrics.centrosActivos - (metrics.centrosActivosExternos ?? 0)} locales · {metrics.centrosActivosExternos ?? 0} importados
-          </div>
         </div>
 
         {/* Sobrevivientes */}
@@ -65,9 +62,6 @@ function ImpactPage() {
           </div>
           <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
             {metrics.sobrevivientes.toLocaleString("es-VE")}
-          </div>
-          <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
-            {(metrics.sobrevivientes - (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE")} locales · {(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} importados
           </div>
         </div>
 

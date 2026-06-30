@@ -35,13 +35,11 @@ export function Hero() {
             {
               l: "Centros activos",
               v: metrics.centrosActivos.toLocaleString("es-VE"),
-              sub: `${metrics.centrosActivos - (metrics.centrosActivosExternos ?? 0)} locales · ${metrics.centrosActivosExternos ?? 0} importados`,
               to: "/centros",
             },
             {
               l: "Sobrevivientes",
               v: metrics.sobrevivientes.toLocaleString("es-VE"),
-              sub: `${(metrics.sobrevivientes - (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE")} locales · ${(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} importados`,
               to: "/rescatados",
             },
             {

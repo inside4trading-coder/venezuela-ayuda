@@ -7,6 +7,9 @@
 -- limitaciones del RLS cliente de forma segura.
 -- ============================================================
 
+-- Dropear restricción de género para cumplir con la política de tolerancia a valores libres
+ALTER TABLE public.survivors DROP CONSTRAINT IF EXISTS survivors_gender_check;
+
 -- ----------------------------------------------------------------
 -- 1. Sincronizar Sobrevivientes
 -- ----------------------------------------------------------------
@@ -39,7 +42,11 @@ BEGIN
       coalesce(item->>'nombre', 'Sin nombre'),
       item->>'cedula',
       (item->>'edad')::integer,
-      coalesce(item->>'genero', 'no_especificado'),
+      CASE lower(coalesce(item->>'genero', 'no_especificado'))
+        WHEN 'femenino' THEN 'femenino'
+        WHEN 'masculino' THEN 'masculino'
+        ELSE 'no_especificado'
+      END,
       CASE (item->>'estado_actual')
         WHEN 'a_salvo' THEN 'estable'
         WHEN 'herido' THEN 'herido_leve'
@@ -61,7 +68,7 @@ BEGIN
       full_name = EXCLUDED.full_name,
       cedula = coalesce(EXCLUDED.cedula, survivors.cedula),
       age_approx = coalesce(EXCLUDED.age_approx, survivors.age_approx),
-      gender = coalesce(EXCLUDED.gender, survivors.gender),
+      gender = EXCLUDED.gender,
       estado_fisico = EXCLUDED.estado_fisico,
       location_name = EXCLUDED.location_name,
       current_state = EXCLUDED.current_state,

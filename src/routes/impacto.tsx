@@ -51,10 +51,10 @@ function ImpactPage() {
             Centros activos
           </div>
           <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
-            {(metrics.centrosActivos + (metrics.centrosActivosExternos ?? 0)).toLocaleString("es-VE")}
+            {metrics.centrosActivos.toLocaleString("es-VE")}
           </div>
           <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
-            {metrics.centrosActivos} locales · {metrics.centrosActivosExternos ?? 0} en ayudaavzla.com
+            {metrics.centrosActivos - (metrics.centrosActivosExternos ?? 0)} locales · {metrics.centrosActivosExternos ?? 0} importados
           </div>
         </div>
 
@@ -64,10 +64,10 @@ function ImpactPage() {
             Sobrevivientes
           </div>
           <div className="font-display font-bold text-[36px] sm:text-[44px] leading-none text-[var(--color-text-main)]">
-            {(metrics.sobrevivientes + (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE")}
+            {metrics.sobrevivientes.toLocaleString("es-VE")}
           </div>
           <div className="text-[11px] text-[var(--color-text-muted)] font-mono">
-            {metrics.sobrevivientes.toLocaleString("es-VE")} locales · {(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} en ayudaavzla.com
+            {(metrics.sobrevivientes - (metrics.sobrevivientesExternos ?? 0)).toLocaleString("es-VE")} locales · {(metrics.sobrevivientesExternos ?? 0).toLocaleString("es-VE")} importados
           </div>
         </div>
 

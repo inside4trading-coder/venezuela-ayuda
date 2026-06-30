@@ -134,11 +134,6 @@ function RescatadosPage() {
           Ocultar reunidos con familia
         </label>
 
-        {source === "external" && externalError && (
-          <div className="p-4 border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-300 rounded-lg text-sm">
-            {externalError}
-          </div>
-        )}
 
         {loadingSurvivors ? (
           <p className="text-[13px] text-[var(--color-text-muted)]">Cargando sobrevivientes...</p>

@@ -64,7 +64,51 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
           q = q.eq("estado_fisico", estadoFisico);
         }
         if (locationName) {
-          q = q.ilike("location_name", `%${locationName.trim()}%`);
+          if (locationName === "Hospital Dr. José María Vargas") {
+            q = q.ilike("location_name", "%vargas%");
+          } else if (locationName === "Hospital Pérez Carreño") {
+            q = q.or("location_name.ilike.%perez carreco%,location_name.ilike.%perez carreño%,location_name.ilike.%carreño%,location_name.ilike.%carreco%");
+          } else if (locationName === "Parque del Oeste Alí Primera") {
+            q = q.or("location_name.ilike.%ali primera%,location_name.ilike.%parque del oeste%");
+          } else if (locationName === "Refugio Campo de Golf Caribe") {
+            q = q.or("location_name.ilike.%golf caribe%,location_name.ilike.%caribean golf%,location_name.ilike.%campo de golf%");
+          } else if (locationName === "Hospital Domingo Luciani") {
+            q = q.ilike("location_name", "%luciani%");
+          } else if (locationName === "Hospital Universitario de Caracas") {
+            q = q.ilike("location_name", "%universitario%");
+          } else if (locationName === "Hospital Ana Francisca Pérez de León II") {
+            q = q.ilike("location_name", "%perez de leon%");
+          } else if (locationName === "Hospital Periférico de Catia") {
+            q = q.or("location_name.ilike.%periferico de catia%,location_name.ilike.%periférico de catia%");
+          } else if (locationName === "Cruz Roja") {
+            q = q.ilike("location_name", "%cruz roja%");
+          } else if (locationName === "Refugio La Lucha") {
+            q = q.ilike("location_name", "%lucha%");
+          } else if (locationName === "Refugio Belo Horizonte") {
+            q = q.or("location_name.ilike.%belo horizonte%,location_name.ilike.%bello horizonte%");
+          } else if (locationName === "Otro / Registro Externo") {
+            q = q.not("location_name", "ilike", "%vargas%")
+                 .not("location_name", "ilike", "%perez carreco%")
+                 .not("location_name", "ilike", "%perez carreño%")
+                 .not("location_name", "ilike", "%carreño%")
+                 .not("location_name", "ilike", "%carreco%")
+                 .not("location_name", "ilike", "%ali primera%")
+                 .not("location_name", "ilike", "%parque del oeste%")
+                 .not("location_name", "ilike", "%golf caribe%")
+                 .not("location_name", "ilike", "%caribean golf%")
+                 .not("location_name", "ilike", "%campo de golf%")
+                 .not("location_name", "ilike", "%luciani%")
+                 .not("location_name", "ilike", "%universitario%")
+                 .not("location_name", "ilike", "%perez de leon%")
+                 .not("location_name", "ilike", "%periferico de catia%")
+                 .not("location_name", "ilike", "%periférico de catia%")
+                 .not("location_name", "ilike", "%cruz roja%")
+                 .not("location_name", "ilike", "%lucha%")
+                 .not("location_name", "ilike", "%belo horizonte%")
+                 .not("location_name", "ilike", "%bello horizonte%");
+          } else {
+            q = q.ilike("location_name", `%${locationName.trim()}%`);
+          }
         }
         if (searchName && searchName.trim()) {
           q = q.ilike("full_name", `%${searchName.trim()}%`);

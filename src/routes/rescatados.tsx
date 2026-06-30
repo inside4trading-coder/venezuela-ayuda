@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useMemo, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useMemo } from "react";
 import { Select } from "@/components/ui-vh/Field";
 import { ESTADOS_VENEZUELA } from "@/data/mock";
 import { useSurvivors, type Survivor } from "@/hooks/useSurvivors";
 import { SurvivorDetailDialog } from "@/components/rescatados/SurvivorDetailDialog";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { CONSOLIDATED_CENTERS, getConsolidatedCenter } from "@/lib/utils";
 
 
 export const Route = createFileRoute("/rescatados")({
@@ -45,29 +45,9 @@ function RescatadosPage() {
   const [survivorState, setSurvivorState] = useState<string>("");
   const [survivorPhysicalState, setSurvivorPhysicalState] = useState<string>("");
   const [survivorLocation, setSurvivorLocation] = useState<string>("");
-  const [uniqueLocations, setUniqueLocations] = useState<string[]>([]);
   const [survivorPage, setSurvivorPage] = useState<number>(1);
   const [hideReunited, setHideReunited] = useState<boolean>(false);
   const [refreshKey, setRefreshKey] = useState<number>(0);
-
-  useEffect(() => {
-    let active = true;
-    supabase
-      .from("centers")
-      .select("name")
-      .not("verified_at", "is", null)
-      .order("name")
-      .then(({ data }) => {
-        if (!active) return;
-        if (data) {
-          const names = Array.from(new Set(data.map((c) => c.name))) as string[];
-          setUniqueLocations(names.filter(Boolean));
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const localFilters = useMemo(
     () => ({
@@ -176,7 +156,7 @@ function RescatadosPage() {
             }}
           >
             <option value="">Todos los Centros / Ubicaciones</option>
-            {uniqueLocations.map((loc) => (
+            {CONSOLIDATED_CENTERS.map((loc) => (
               <option key={loc} value={loc}>
                 {loc}
               </option>
@@ -239,9 +219,14 @@ function RescatadosPage() {
                         </div>
                       </td>
                       <td className="p-3">
-                        <span className="block text-[var(--color-text-main)]">
-                          {s.location_name || "Desconocido"}
+                        <span className="block text-[var(--color-text-main)] font-semibold text-emerald-800 dark:text-emerald-400">
+                          {getConsolidatedCenter(s.location_name) || "Desconocido"}
                         </span>
+                        {s.location_name && (
+                          <span className="block text-[11px] text-[var(--color-text-muted)] italic">
+                            {s.location_name}
+                          </span>
+                        )}
                         <span className="block text-[11px] text-[var(--color-text-muted)]">
                           {s.current_city ? `${s.current_city}, ` : ""}{s.current_state}
                         </span>

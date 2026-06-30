@@ -11,6 +11,7 @@ import type { Survivor } from "@/hooks/useSurvivors";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useMarkSurvivorReunited } from "@/hooks/useMarkSurvivorReunited";
+import { getConsolidatedCenter } from "@/lib/utils";
 
 interface Props {
   survivor: Survivor | null;
@@ -156,8 +157,9 @@ export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
     }
   };
 
+  const centroConsolidado = getConsolidatedCenter(survivor.location_name);
   const ubicacionCompleta = [
-    survivor.location_name,
+    centroConsolidado,
     [survivor.current_city, survivor.current_state].filter(Boolean).join(", "),
   ]
     .filter(Boolean)
@@ -239,6 +241,12 @@ export function SurvivorDetailDialog({ survivor, onClose, onUpdated }: Props) {
           )}
 
           {ubicacionCompleta && <Row label="Ubicación">{ubicacionCompleta}</Row>}
+
+          {survivor.location_name && centroConsolidado !== survivor.location_name && (
+            <Row label="Detalle del lugar">
+              <span className="italic">{survivor.location_name}</span>
+            </Row>
+          )}
 
           {survivor.location_type && (
             <Row label="Tipo de lugar">{survivor.location_type}</Row>

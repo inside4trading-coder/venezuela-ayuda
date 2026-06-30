@@ -64,7 +64,7 @@ export function useSurvivors(filters: SurvivorsFilters = {}) {
           q = q.eq("estado_fisico", estadoFisico);
         }
         if (locationName) {
-          q = q.eq("location_name", locationName);
+          q = q.ilike("location_name", `%${locationName.trim()}%`);
         }
         if (searchName && searchName.trim()) {
           q = q.ilike("full_name", `%${searchName.trim()}%`);

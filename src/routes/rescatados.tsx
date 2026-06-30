@@ -53,15 +53,15 @@ function RescatadosPage() {
   useEffect(() => {
     let active = true;
     supabase
-      .from("survivors")
-      .select("location_name")
-      .eq("verified", true)
-      .not("location_name", "is", null)
+      .from("centers")
+      .select("name")
+      .not("verified_at", "is", null)
+      .order("name")
       .then(({ data }) => {
         if (!active) return;
         if (data) {
-          const names = Array.from(new Set(data.map((d) => d.location_name))) as string[];
-          setUniqueLocations(names.filter(Boolean).sort());
+          const names = Array.from(new Set(data.map((c) => c.name))) as string[];
+          setUniqueLocations(names.filter(Boolean));
         }
       });
     return () => {

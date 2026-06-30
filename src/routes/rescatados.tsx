@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo } from "react";
 import { Select } from "@/components/ui-vh/Field";
-import { ESTADOS_VENEZUELA } from "@/data/mock";
 import { useSurvivors, type Survivor } from "@/hooks/useSurvivors";
 import { SurvivorDetailDialog } from "@/components/rescatados/SurvivorDetailDialog";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
@@ -42,7 +41,6 @@ function getEstadoFisicoBadge(estado: string) {
 function RescatadosPage() {
   const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
   const [survivorSearch, setSurvivorSearch] = useState<string>("");
-  const [survivorState, setSurvivorState] = useState<string>("");
   const [survivorPhysicalState, setSurvivorPhysicalState] = useState<string>("");
   const [survivorLocation, setSurvivorLocation] = useState<string>("");
   const [survivorPage, setSurvivorPage] = useState<number>(1);
@@ -52,7 +50,6 @@ function RescatadosPage() {
   const localFilters = useMemo(
     () => ({
       search: survivorSearch || undefined,
-      state: survivorState || undefined,
       estado_fisico: survivorPhysicalState || undefined,
       location_name: survivorLocation || undefined,
       page: survivorPage,
@@ -62,7 +59,6 @@ function RescatadosPage() {
     }),
     [
       survivorSearch,
-      survivorState,
       survivorPhysicalState,
       survivorLocation,
       survivorPage,
@@ -101,7 +97,7 @@ function RescatadosPage() {
 
 
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-[var(--color-text-muted)]" />
@@ -117,21 +113,6 @@ function RescatadosPage() {
               className="w-full pl-9 pr-3 py-2 border-hair border-[var(--color-border)] bg-[var(--color-surface)] text-[14px] rounded-md text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
-
-          <Select
-            value={survivorState}
-            onChange={(e) => {
-              setSurvivorState(e.target.value);
-              setSurvivorPage(1);
-            }}
-          >
-            <option value="">Todos los Estados (Región)</option>
-            {ESTADOS_VENEZUELA.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </Select>
 
           <Select
             value={survivorPhysicalState}
